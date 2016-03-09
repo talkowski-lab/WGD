@@ -26,7 +26,7 @@ optional arguments:
                         Output bed file of normalized coverage
   -b BINSIZE, --binsize BINSIZE
                         Bin size in bp (default: 1000)
-  -t {nucleotide,physical}, --type {nucleotide,physical}
+  -m {nucleotide,physical}, --mode {nucleotide,physical}
                         Evaluate nucleotide or physical coverage (default: nucleotide)
   -x BLACKLIST, --blacklist BLACKLIST
                         BED file of regions to ignore
@@ -34,6 +34,7 @@ optional arguments:
                         Maximum tolerated blacklist overlap before excluding bin
 ```
 **Usage Notes:**  
-1. Input bam file must be coordinate-sorted and indexed.  
-2. Normalized coverage is raw coverage per bin divided by median of all non-zero, non-blacklisted bins on the same contig
-3. Bins will be ignored automatically if they share at least ```-v``` percent overlap by size with blacklisted regions (```-x``` or ```--blacklist```) 
+1. Input bam file must be coordinate-sorted and indexed
+2. Only non-duplicate primary-aligned reads or proper pairs are considered for 'nucleotide' and 'physical' mode, respectively
+3. Normalized coverage is raw coverage per bin divided by median of all non-zero, non-blacklisted bins on the same contig
+4. Bins will be ignored automatically if they share at least ```-v``` percent overlap by size with blacklisted regions (```-x``` or ```--blacklist```) 
