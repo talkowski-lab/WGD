@@ -27,14 +27,11 @@ optional arguments:
   -b BINSIZE, --binsize BINSIZE
                         Bin size in bp (default: 1000)
   -t {nucleotide,physical}, --type {nucleotide,physical}
-                        Evaluate nucleotide or physical coverage (default:
-                        nucleotide)
+                        Evaluate nucleotide or physical coverage (default: nucleotide)
   -x BLACKLIST, --blacklist BLACKLIST
                         BED file of regions to ignore
   -v OVERLAP, --overlap OVERLAP
-                        Maximum tolerated blacklist overlap before excluding
-                        bin
-
+                        Maximum tolerated blacklist overlap before excluding bin
 ```
 **Usage Notes:**  
 1. Input bam file must be coordinate-sorted and indexed.  
