@@ -38,4 +38,4 @@ optional arguments:
 **Usage Notes:**  
 1. Input bam file must be coordinate-sorted and indexed.  
 2. Normalized coverage is raw coverage per bin divided by median of all non-zero, non-blacklisted bins on the same contig
-3. Bins will be ignored automatically if they share at least (-v) percent overlap by size with blacklisted regions (-x or --blacklist) 
+3. Bins will be ignored automatically if they share at least ```-v``` percent overlap by size with blacklisted regions (-x or --blacklist) 
