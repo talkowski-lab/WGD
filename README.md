@@ -5,7 +5,7 @@
 
 All code copyright (c) 2016 Ryan Collins and is distributed under terms of the MIT license.
 
-## binCov.py
+### binCov.py
 Iterates through a single chromosome of a bam file and calculates either nucleotide or physical coverage in regularly segmented bins.
 ```
 usage: binCov.py [-h] [-n NORM_OUT] [-b BINSIZE] [-t {nucleotide,physical}]
