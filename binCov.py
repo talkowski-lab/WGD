@@ -9,9 +9,12 @@ Calculates non-duplicate primary-aligned binned coverage of a chromosome from an
 
 #Import libraries
 import argparse
+import sys
 from collections import defaultdict, Counter, namedtuple
 import pysam
 import pybedtools
+
+#Function to evaluate 
 
 #Main function
 def main():
@@ -21,18 +24,25 @@ def main():
                         help='Input bam')
     parser.add_argument('chr', help='Contig to evaluate')
     parser.add_argument('cov_out', help='Output bed file of raw coverage')
-    parser.add_argument('-n', '--norm_out', help='Output bed file of normalized coverage')
+    parser.add_argument('-n', '--norm_out', default = None,
+    					help='Output bed file of normalized coverage')
     parser.add_argument('-b', '--binsize', type=int, default=1000,
-                        help='Molecule partitioning distance in bp (default: 50000)')
+                        help='Bin size in bp (default: 1000)')
     parser.add_argument('-t', '--type', default='nucleotide',
                         help='Evaluate nucleotide or physical coverage (default: nucleotide)')
     parser.add_argument('-x', '--blacklist',
     	                help='BED file of regions to ignore')
     args = parser.parse_args()
 
+    #Sanity check arguments
+    if args.type != 'nucleotide' and args.type != 'physical':
+    	print 'ERROR: --type option must be either \'nucleotide\' or \'physical\''
+    	sys.exit(1)
+
     #Open outfiles
     fcovout = open(args.cov_out, 'w')
-    fnormout = open(args.norm_out, 'w')
+    if args.norm_out is not None:
+	    fnormout = open(args.norm_out, 'w')
 
     #Run code here
     #TBD
@@ -40,7 +50,8 @@ def main():
 
     #Close outfiles
     fcovout.close()
-    fnormout.close()
+    if args.norm_out is not None:
+	    fnormout.close()
 
 
 #Main block
