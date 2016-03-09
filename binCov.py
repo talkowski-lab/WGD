@@ -14,7 +14,11 @@ from collections import defaultdict, Counter, namedtuple
 import pysam
 import pybedtools
 
-#Function to evaluate 
+#Function to evaluate nucleotide coverage
+# def nuc_binCov(bam, chr, binsize, blacklist = None):
+
+# 	blist=
+
 
 #Main function
 def main():
@@ -24,21 +28,22 @@ def main():
                         help='Input bam')
     parser.add_argument('chr', help='Contig to evaluate')
     parser.add_argument('cov_out', help='Output bed file of raw coverage')
-    parser.add_argument('-n', '--norm_out', default = None,
+    parser.add_argument('-n', '--norm_out', nargs=1,
     					help='Output bed file of normalized coverage')
     parser.add_argument('-b', '--binsize', type=int, default=1000,
                         help='Bin size in bp (default: 1000)')
     parser.add_argument('-t', '--type', default='nucleotide',
+    					choices = ['nucleotide', 'physical'],
                         help='Evaluate nucleotide or physical coverage (default: nucleotide)')
-    parser.add_argument('-x', '--blacklist', default = None,
+    parser.add_argument('-x', '--blacklist', nargs=1,
     	                help='BED file of regions to ignore')
     args = parser.parse_args()
 
     #Sanity check arguments
-    if args.type != 'nucleotide' and args.type != 'physical':
-    	print('ERROR: --type option must be either \'nucleotide\' or \'physical\'')
-    	parser.print_usage()
-    	sys.exit(1)
+    # if args.type != 'nucleotide' and args.type != 'physical':
+    # 	print('ERROR: --type option must be either \'nucleotide\' or \'physical\'')
+    # 	parser.print_usage()
+    # 	sys.exit(1)
 
     #Open outfiles
     fcovout = open(args.cov_out, 'w')
