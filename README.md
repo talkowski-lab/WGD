@@ -8,7 +8,8 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 ## binCov.py
 Iterates through a single chromosome of a bam file and calculates either nucleotide or physical coverage in regularly segmented bins.
 ```
-usage: binCov.py [-h] [-n NORM_OUT] [-b BINSIZE] [-t TYPE] [-x BLACKLIST]
+usage: binCov.py [-h] [-n NORM_OUT] [-b BINSIZE] [-t {nucleotide,physical}]
+                 [-x BLACKLIST]
                  ibam chr cov_out
 
 Calculates non-duplicate primary-aligned binned coverage of a chromosome from
@@ -24,8 +25,9 @@ optional arguments:
   -n NORM_OUT, --norm_out NORM_OUT
                         Output bed file of normalized coverage
   -b BINSIZE, --binsize BINSIZE
-                        Molecule partitioning distance in bp (default: 50000)
-  -t TYPE, --type TYPE  Evaluate nucleotide or physical coverage (default:
+                        Bin size in bp (default: 1000)
+  -t {nucleotide,physical}, --type {nucleotide,physical}
+                        Evaluate nucleotide or physical coverage (default:
                         nucleotide)
   -x BLACKLIST, --blacklist BLACKLIST
                         BED file of regions to ignore
