@@ -26,6 +26,8 @@ def main():
                         help='Molecule partitioning distance in bp (default: 50000)')
     parser.add_argument('-t', '--type', default='nucleotide',
                         help='Evaluate nucleotide or physical coverage (default: nucleotide)')
+    parser.add_argument('-x', '--blacklist',
+    	                help='BED file of regions to ignore')
     args = parser.parse_args()
 
     #Open outfiles
