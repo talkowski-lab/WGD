@@ -37,6 +37,7 @@ def main():
     #Sanity check arguments
     if args.type != 'nucleotide' and args.type != 'physical':
     	print('ERROR: --type option must be either \'nucleotide\' or \'physical\'')
+    	parser.print_usage()
     	sys.exit(1)
 
     #Open outfiles
