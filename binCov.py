@@ -74,7 +74,7 @@ def main():
     					help='Output bed file of normalized coverage')
     parser.add_argument('-b', '--binsize', type=int, default=1000,
                         help='Bin size in bp (default: 1000)')
-    parser.add_argument('-t', '--type', default='nucleotide',
+    parser.add_argument('-m', '--mode', default='nucleotide',
     					choices = ['nucleotide', 'physical'],
                         help='Evaluate nucleotide or physical coverage '
                              '(default: nucleotide)')
@@ -91,7 +91,7 @@ def main():
 	    fnormout = open(args.norm_out, 'w')
 
     #Get nucleotide coverage
-    if args.type == 'nucleotide':
+    if args.mode == 'nucleotide':
     	coverage = nuc_binCov(args.bam, args.chr, args.binsize, args.blacklist)
 
     #Close outfiles
