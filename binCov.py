@@ -10,14 +10,53 @@ Calculates non-duplicate primary-aligned binned coverage of a chromosome from an
 #Import libraries
 import argparse
 import sys
-from collections import defaultdict, Counter, namedtuple
 import pysam
 import pybedtools
 
 #Function to evaluate nucleotide coverage
-# def nuc_binCov(bam, chr, binsize, blacklist = None):
+def nuc_binCov(bam, chr, binsize, blacklist = None):
+	"""
+    Generates non-duplicate, primary-aligned nucleotide coverage in regular bin
+    sizes on a specified chromosome from a coordinate-sorted bamfile
 
-# 	blist=
+    Parameters
+    ----------
+    bam : pysam.AlignmentFile
+        Input bam
+    chr : string
+        Chromosome to evaluate
+    binsize : int
+    	Size of bins in bp
+    blacklist : string
+    	Path to blacklist BED file
+
+    Returns
+    ------
+    coverage : list
+        chr, start, end, coverage
+
+	"""
+
+	#Define read filtering criteria
+	#If True, read fails filtering
+	def _filter(read):
+		return (read.is_secondary or read.is_duplicate or
+				read.is_supplementary or read.is_unmapped)
+
+	#Subset bam for relevant reads and convert to BedTool
+	subbam = pybedtools.BedTool(read for read in bam.fetch(str(chr)) if _filter(read) is False)
+	
+	#Instantiate coverage bins and convert to BedTool
+	maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[str(chr)]
+	bin_starts = range(0, maxchrpos - binsize, binsize)
+	bin_stops = range(binsize, maxchrpos, binsize)
+	bins = []
+	for i in range(0, len(bin_starts)-1):
+		bins.append([chr, bin_starts[i], bin_stops[i]])
+	bins = pybedtools.BedTool(bins)
+
+	#Remove bins that have at least 5% overlap with blacklist by size
+	bins_filtered = bins.intersect(blacklist, v=True, f=0.05)
 
 
 #Main function
@@ -34,16 +73,14 @@ def main():
                         help='Bin size in bp (default: 1000)')
     parser.add_argument('-t', '--type', default='nucleotide',
     					choices = ['nucleotide', 'physical'],
-                        help='Evaluate nucleotide or physical coverage (default: nucleotide)')
+                        help='Evaluate nucleotide or physical coverage '
+                             '(default: nucleotide)')
     parser.add_argument('-x', '--blacklist', nargs=1,
     	                help='BED file of regions to ignore')
+    parser.add_argument('-v', '--overlap', nargs=1, type=float, default=0.05,
+    	   				help='Maximum tolerated blacklist overlap before '
+    	   				      'excluding bin')
     args = parser.parse_args()
-
-    #Sanity check arguments
-    # if args.type != 'nucleotide' and args.type != 'physical':
-    # 	print('ERROR: --type option must be either \'nucleotide\' or \'physical\'')
-    # 	parser.print_usage()
-    # 	sys.exit(1)
 
     #Open outfiles
     fcovout = open(args.cov_out, 'w')
