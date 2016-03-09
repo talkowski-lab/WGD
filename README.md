@@ -9,7 +9,7 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 Iterates through a single chromosome of a bam file and calculates either nucleotide or physical coverage in regularly segmented bins.
 ```
 usage: binCov.py [-h] [-n NORM_OUT] [-b BINSIZE] [-t {nucleotide,physical}]
-                 [-x BLACKLIST]
+                 [-x BLACKLIST] [-v OVERLAP]
                  ibam chr cov_out
 
 Calculates non-duplicate primary-aligned binned coverage of a chromosome from
@@ -31,6 +31,9 @@ optional arguments:
                         nucleotide)
   -x BLACKLIST, --blacklist BLACKLIST
                         BED file of regions to ignore
+  -v OVERLAP, --overlap OVERLAP
+                        Maximum tolerated blacklist overlap before excluding
+                        bin
 ```
 **Usage Notes:**  
 1. Input bam file must be coordinate-sorted and indexed.  
