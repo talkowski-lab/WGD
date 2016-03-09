@@ -21,7 +21,7 @@ def main():
                         help='Input bam')
     parser.add_argument('chr', help='Contig to evaluate')
     parser.add_argument('cov_out', help='Output bed file of raw coverage')
-    parser.add_argument('norm_out', help='Output bed file of normalized coverage')
+    parser.add_argument('-n', '--norm_out', help='Output bed file of normalized coverage')
     parser.add_argument('-b', '--binsize', type=int, default=1000,
                         help='Molecule partitioning distance in bp (default: 50000)')
     parser.add_argument('-t', '--type', default='nucleotide',
