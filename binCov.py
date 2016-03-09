@@ -30,13 +30,13 @@ def main():
                         help='Bin size in bp (default: 1000)')
     parser.add_argument('-t', '--type', default='nucleotide',
                         help='Evaluate nucleotide or physical coverage (default: nucleotide)')
-    parser.add_argument('-x', '--blacklist',
+    parser.add_argument('-x', '--blacklist', default = None,
     	                help='BED file of regions to ignore')
     args = parser.parse_args()
 
     #Sanity check arguments
     if args.type != 'nucleotide' and args.type != 'physical':
-    	print 'ERROR: --type option must be either \'nucleotide\' or \'physical\''
+    	print('ERROR: --type option must be either \'nucleotide\' or \'physical\'')
     	sys.exit(1)
 
     #Open outfiles
