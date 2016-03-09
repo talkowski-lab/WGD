@@ -10,13 +10,13 @@ Iterates through a single chromosome of a bam file and calculates either nucleot
 ```
 usage: binCov.py [-h] [-n NORM_OUT] [-b BINSIZE] [-t {nucleotide,physical}]
                  [-x BLACKLIST] [-v OVERLAP]
-                 ibam chr cov_out
+                 bam chr cov_out
 
 Calculates non-duplicate primary-aligned binned coverage of a chromosome from
 an input BAM file
 
 positional arguments:
-  ibam                  Input bam
+  bam                   Input bam
   chr                   Contig to evaluate
   cov_out               Output bed file of raw coverage
 
@@ -34,6 +34,7 @@ optional arguments:
   -v OVERLAP, --overlap OVERLAP
                         Maximum tolerated blacklist overlap before excluding
                         bin
+
 ```
 **Usage Notes:**  
 1. Input bam file must be coordinate-sorted and indexed.  
