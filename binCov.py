@@ -58,12 +58,15 @@ def nuc_binCov(bam, chr, binsize, blacklist = None):
 	#Remove bins that have at least 5% overlap with blacklist by size
 	bins_filtered = bins.intersect(blacklist, v=True, f=0.05)
 
+	#Generate & return coverage
+	coverage = bins_filtered.coverage(subbam, counts=True, sorted=True)
+	return coverage
 
 #Main function
 def main():
     #Add arguments
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('ibam', type=pysam.AlignmentFile,
+    parser.add_argument('bam', type=pysam.AlignmentFile,
                         help='Input bam')
     parser.add_argument('chr', help='Contig to evaluate')
     parser.add_argument('cov_out', help='Output bed file of raw coverage')
@@ -87,10 +90,9 @@ def main():
     if args.norm_out is not None:
 	    fnormout = open(args.norm_out, 'w')
 
-    #Run code here
-    #TBD
-    #TBD
-    #TBD
+    #Get nucleotide coverage
+    if args.type == 'nucleotide':
+    	coverage = nuc_binCov(args.bam, args.chr, args.binsize, args.blacklist)
 
     #Close outfiles
     fcovout.close()
