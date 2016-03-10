@@ -9,9 +9,9 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 ## Table of Contents  
 #### Examples  
 - [Example WGD workflow](http://genome.ucsc.edu/)  
-#### Script documentation
-- [binCov.py](https://github.com/RCollins13/WGD#bincovpy)
-- [WG_binCov.py](https://github.com/RCollins13/WGD#bincovpy)
+#### Script documentation  
+- [binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
+- [WG_binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
 ### Example WGD workflow  
 #### Prerequisites  
 The WGD pipeline requires the following:  
