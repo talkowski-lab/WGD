@@ -58,11 +58,11 @@ def nuc_binCov(bam, chr, binsize, blacklist = None):
 	bins_filtered = bins.intersect(blacklist, v=True, f=0.05)
 
 	#Generate & return coverage
-	coverage = bins_filtered.coverage(subbam, counts=True)
+	coverage = subbam.coverage(bins_filtered, counts=True, abam=True)
 	return coverage
 
 #Function to evaluate physical coverage
-def nuc_binCov(bam, chr, binsize, blacklist = None):
+def phys_binCov(bam, chr, binsize, blacklist = None):
 	"""
     Generates non-duplicate, primary-aligned proper pair physical coverage
     in regular bin sizes on a specified chromosome from a coordinate-sorted
@@ -93,7 +93,7 @@ def nuc_binCov(bam, chr, binsize, blacklist = None):
 				read.mate_is_unmapped or (not read.is_proper_pair))
 
 	#Subset bam for relevant reads and convert to BedTool
-	subbam = (read for read in bam.fetch(str(chr)) if _filter(read) is False)
+	nbam = (bam.fetch(str(chr))).
 	nbam = 
 	subbam = pybedtools.BedTool(read for read in bam.fetch(str(chr)) if _filter(read) is False)
 	
