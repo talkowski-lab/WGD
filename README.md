@@ -10,8 +10,19 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 The WGD pipeline requires the following:  
 - Coordinate-sorted, indexed bams for all samples
 - List of contigs to evaluate (only primary contigs recommended; e.g. 1...22, X, and Y for human)
-- Bed-file of N-masked regions of the genome. These are available through the [UCSC Genome Browser](http://genome.ucsc.edu/ "UCSC Genome Browser")
-##### Step 1: Generate normalized coverage on all libraries 
+- Bed-file of N-masked regions of the genome. These are available through the [UCSC Genome Browser](http://genome.ucsc.edu/ "UCSC Genome Browser")  
+##### Step 1: Generate normalized coverage per chromosome on all libraries  
+Normalized coverage is calculated by ```binCov.py``` on a per-chromosome basis. Parallelization of this process is strongly encouraged. 
+There are two approaches to parallelization, depending on your available computational resources. Examples are given below using LSF as a scheduler, but could be easily configured to your scheduler/environment.  
+**Parallel submission of all chromosomes from all samples**
+```
+#!/bin/bash  
+while read sample; do
+  while read contig; do
+    bsub "binCov.py "
+  done < list_of_contigs.txt
+done < list_of_samples.txt
+```
 
 ---
 ### binCov.py
@@ -45,8 +56,8 @@ optional arguments:
                         bin
 ```
 **Usage Notes:**  
-1. Input bam file must be coordinate-sorted and indexed.  
-2. Only non-duplicate primary-aligned reads or proper pairs are considered for 'nucleotide' and 'physical' mode, respectively.  
-3. Normalized coverage is raw coverage per bin divided by median of all non-zero, non-blacklisted bins on the same contig.  
-4. Bins will be ignored automatically if they share at least ```-v``` percent overlap by size with blacklisted regions (```-x``` or ```--blacklist```).  
-5. Currently uses ```bedtools coverage``` syntax assuming ```bedtools``` version pre-2.24.0 (i.e. ```-a``` is features and ```-b``` is intervals for which to calculate coverage; this was reversed starting in ```bedtools v2.24.0```)
+- Input bam file must be coordinate-sorted and indexed.  
+- Only non-duplicate primary-aligned reads or proper pairs are considered for 'nucleotide' and 'physical' mode, respectively.  
+- Normalized coverage is raw coverage per bin divided by median of all non-zero, non-blacklisted bins on the same contig.  
+- Bins will be ignored automatically if they share at least ```-v``` percent overlap by size with blacklisted regions (```-x``` or ```--blacklist```).  
+- Currently uses ```bedtools coverage``` syntax assuming ```bedtools``` version pre-2.24.0 (i.e. ```-a``` is features and ```-b``` is intervals for which to calculate coverage; this was reversed starting in ```bedtools v2.24.0```)
