@@ -52,7 +52,7 @@ TBD
 #### Step 3: Run WGD model  
 TBD  
 
-#### Step 4 (Optional): Visualization of dosage biases  
+#### Step 4 (Optional): Visualization of dosage biases and CNVs  
 TBD  
 
 ---  
