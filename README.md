@@ -10,7 +10,8 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 The WGD pipeline requires the following:  
 - Coordinate-sorted, indexed bams for all samples
 - List of contigs to evaluate (only primary contigs recommended; e.g. 1...22, X, and Y for human)
-- Bed-file of N-masked regions of the genome. These are available through the [UCSC Genome Browser](http://genome.ucsc.edu/ "UCSC Genome Browser")  
+- Bed-file of N-masked regions of the reference genome. These are available from [UCSC](http://genome.ucsc.edu/ "UCSC Genome Browser")  
+
 #### Step 1: Generate normalized coverage per chromosome on all libraries  
 Normalized coverage is calculated by ```binCov.py``` on a per-chromosome basis. Parallelization of this process is strongly encouraged.  
 
