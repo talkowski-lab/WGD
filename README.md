@@ -23,7 +23,11 @@ There are two approaches to parallelization, depending on your available computa
 #!/bin/bash  
 while read sample; do
   while read contig; do
-    bsub "binCov.py -n ${sample}.${contig}.normCov.bed -b 100000 -m nucleotide -x /path/to/Nmask.bed ${sample}.bam ${contig} ${sample}.${contig}.rawCov.bed"
+    bsub "binCov.py ${sample}.bam ${contig} ${sample}.${contig}.rawCov.bed \
+    -n ${sample}.${contig}.normCov.bed \
+    -b 100000 \
+    -m nucleotide \
+    -x /path/to/Nmask.bed"
   done < list_of_contigs.txt
 done < list_of_samples.txt
 ```  
