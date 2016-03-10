@@ -80,8 +80,10 @@ fi
 #Run binCov.py on all contigs
 spath=$( dirname $( readlink -f $0 ) )
 echo ${spath}
-#while read contig; do
-
-
-
-
+while read contig; do
+	if [ ${blist} != "NONE" ]; then
+		${spath}/binCov.py -n ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.normCov.bed -b ${binsize} -m ${mode} -x ${blist} -v ${v} ${bam} ${contig} ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed
+	else
+		${spath}/binCov.py -n ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.normCov.bed -b ${binsize} -m ${mode} -v ${v} ${bam} ${contig} ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed
+	fi
+done < ${contigs_list}
