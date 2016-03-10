@@ -111,21 +111,21 @@ optional arguments:
 Wrapper for serialized execution of binCov.py across multiple chromosomes for an individual sample  
 ```
 usage: WG_binCov.sh [-h] [-b BINSIZE] [-m MODE] 
-										[-L CONTIGS] [-x BLACKLIST] [-v OVERLAP] 
-										BAM ID OUTDIR
+                    [-L CONTIGS] [-x BLACKLIST] [-v OVERLAP] 
+                    BAM ID OUTDIR
 
 Wrapper for serialized execution of binCov.py across multiple chromosomes
 
 Positional arguments:
-	BAM			Input bam
-	ID			Sample ID
-	OUTDIR	Output directory
+  BAM     Input bam
+  ID      Sample ID
+  OUTDIR  Output directory
 
 Optional arguments:
-	-h	HELP				Show this help message and exit
-	-b	BINSIZE			Bin size in bp (default: 1000)
-	-m	MODE				Evaluate physical or nucleotide coverage (default: nucleotide)
-	-L	CONTIGS			List of contigs to evaluate (default: all contigs in bam header)
-	-x	BLACKLIST		BED file of regions to ignore
-	-v	OVERLAP			Maximum tolerated blacklist overlap before excluding bin
+  -h  HELP         Show this help message and exit
+  -b  BINSIZE      Bin size in bp (default: 1000)
+  -m  MODE         Evaluate physical or nucleotide coverage (default: nucleotide)
+  -L  CONTIGS      List of contigs to evaluate (default: all contigs in bam header)
+  -x  BLACKLIST    BED file of regions to ignore
+  -v  OVERLAP      Maximum tolerated blacklist overlap before excluding bin
 ```
