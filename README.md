@@ -107,5 +107,5 @@ optional arguments:
 
 ---  
 
-### WG_binCov.py
+### WG_binCov.sh
 Wrapper for serialized execution of binCov.py across multiple chromosomes 
