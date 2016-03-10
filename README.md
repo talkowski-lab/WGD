@@ -47,10 +47,13 @@ done < list_of_samples.txt
 ```
 
 #### Step 2: Create normalized dosage matrix for cohort  
+TBD  
 
 #### Step 3: Run WGD model  
+TBD  
 
 #### Step 4 (Optional): Visualization of dosage biases  
+TBD  
 
 ---  
 ## Script Documentation
