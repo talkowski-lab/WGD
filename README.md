@@ -70,7 +70,13 @@ TBD
 --- 
 
 ### Pipeline runtimes  
-The rate-limiting step of the pipeline is ```binCov.py```, which scales linearly with the number of reads processed at an approximate rate of 7 mins per 1M aligned 25bp reads and 13 mins per 1M aligned 150bp reads (single-core CPU, 6GB RAM, ≥1kb bins). This is the reason for maximizing parallelization where possible (see [earlier example](https://github.com/RCollins13/WGD#step-1-generate-normalized-coverage-per-chromosome-on-all-libraries)).  Physical coverage is marginally faster than nucleotide coverage. Bin sizes do not strongly influence runtime beyond 1kb, but bin sizes smaller than 1kb substantially increase runtime.
+**binCov.py**  
+
+The rate-limiting step of the pipeline is ```binCov.py```, which scales linearly with the number of reads processed at an approximate rate of 7 mins per 1M aligned 25bp reads and 13 mins per 1M aligned 150bp reads (single-core CPU, 6GB RAM, ≥1kb bins). This is the reason for maximizing parallelization where possible (see [earlier example](https://github.com/RCollins13/WGD#step-1-generate-normalized-coverage-per-chromosome-on-all-libraries)).  
+
+Physical coverage is marginally faster than nucleotide coverage. Bin sizes do not strongly influence runtime beyond 1kb, but bin sizes smaller than 1kb substantially increase runtime.  
+
+When optimal parallelization is employed with a standard LSF scheduler on [the Partners Healthcare Linux Cluster](https://rc.partners.org/kb/computational-resources/linux-cluster), approximately 10 ~40X PE150 Illumina human genomes will complete every 20 minutes.  
 
 --- 
 
