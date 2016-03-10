@@ -38,9 +38,19 @@ Alternatively, if available cores are limited or sample sizes are large, a wrapp
 ```
 #!/bin/bash  
 while read sample; do
-  bsub "binCov.py -L list_of_contigs.txt -b 100000 -m nucleotide -x /path/to/Nmask.bed ${sample}.bam ${sample} `pwd`"
+  bsub "WG_binCov.py ${sample}.bam ${sample} `pwd` \
+  -L list_of_contigs.txt \
+  -b 100000 \
+  -m nucleotide \
+  -x /path/to/Nmask.bed"
 done < list_of_samples.txt
 ```
+
+#### Step 2: Create normalized dosage matrix for cohort  
+
+#### Step 3: Run WGD model  
+
+#### Step 4 (Optional): Visualization of dosage biases  
 
 ---  
 ## Script Documentation
