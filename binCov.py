@@ -44,8 +44,8 @@ def filter_mappings(bam, mode='nucleotide'):
     #For nucleotide mode, return non-duplicate primary read mappings
     if mode == 'nucleotide':
         for read in bam:
-            if not any(read.is_duplicate or read.is_unmapped or 
-                       read.is_secondary or read.is_supplementary):
+            if not any([read.is_duplicate, read.is_unmapped,
+                       read.is_secondary, read.is_supplementary]):
                 yield '\t'.join([read.reference_name, str(read.reference_start),
                                  str(read.reference_end)]) + '\n'
 
