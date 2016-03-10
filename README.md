@@ -9,9 +9,11 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 ## Table of Contents  
 #### Examples  
 - [Example WGD workflow](http://genome.ucsc.edu/)  
+
 #### Script documentation  
 - [binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
 - [WG_binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
+
 ### Example WGD workflow  
 #### Prerequisites  
 The WGD pipeline requires the following:  
@@ -100,5 +102,6 @@ optional arguments:
 - Normalized coverage is raw coverage per bin divided by median of all non-zero, non-blacklisted bins on the same contig.  
 - Bins will be ignored automatically if they share at least ```-v``` percent overlap by size with blacklisted regions (```-x``` or ```--blacklist```).  
 - Currently uses ```bedtools coverage``` syntax assuming ```bedtools``` version pre-2.24.0 (i.e. ```-a``` is features and ```-b``` is intervals for which to calculate coverage; this was reversed starting in ```bedtools v2.24.0```)  
+
 ### WG_binCov.py
 Wrapper for serialized execution of binCov.py across multiple chromosomes 
