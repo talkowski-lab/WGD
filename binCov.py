@@ -91,7 +91,7 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
     """
     
     #Create coverage bins and convert to BedTool
-    maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[str(chr)]
+    maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[chr]
     bin_starts = range(0, maxchrpos - binsize, binsize)
     bin_stops = range(binsize, maxchrpos, binsize)
     bins = []
@@ -104,7 +104,7 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
     bins_filtered = bins.intersect(blist, v=True, f=overlap)
 
     #Filter bam
-    mappings = filter_mappings(bam, mode)
+    mappings = filter_mappings(bam.fetch(chr), mode)
     bambed = pybedtools.BedTool(mappings)
 
     #Generate & return coverage
