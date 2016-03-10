@@ -3,7 +3,8 @@
 
 **Contact:** Ryan Collins (rcollins@chgr.mgh.harvard.edu)
 
-All code copyright (c) 2016 Ryan Collins and is distributed under terms of the MIT license.
+All code copyright (c) 2016 Ryan Collins and is distributed under terms of the MIT license.  
+
 
 ---
 ### binCov.py
