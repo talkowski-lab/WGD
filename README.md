@@ -9,6 +9,7 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 ## Table of Contents  
 #### Examples  
 - [Example WGD workflow](https://github.com/RCollins13/WGD#example-wgd-workflow)  
+- [Pipeline runtimes](https://github.com/RCollins13/WGD#pipeline-runtimes)
 - [CNV visualization and annotation](https://github.com/RCollins13/WGD#cnv-visualization-and-annotation)
 
 #### Script documentation  
@@ -65,6 +66,11 @@ TBD
 
 #### Step 4 (Optional): Visualization of dosage biases  
 TBD  
+
+--- 
+
+### Pipeline runtimes  
+The rate-limiting step of the pipeline is ```binCov.py```, which scales linearly with the number of reads processed at an approximate rate of 7 mins per 1M aligned 25bp reads and 13 mins per 1M aligned 150bp reads (single-core CPU, 6GB RAM, ≥1kb bins). This is the reason for maximizing parallelization where possible (see [earlier example](https://github.com/RCollins13/WGD#step-1-generate-normalized-coverage-per-chromosome-on-all-libraries).  Physical coverage is marginally faster than nucleotide coverage. Bin sizes do not strongly influence runtime beyond 1kb, but bin sizes smaller than 1kb substantially increase runtime.
 
 --- 
 
