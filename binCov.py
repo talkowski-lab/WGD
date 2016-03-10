@@ -97,7 +97,8 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
     bins = pybedtools.BedTool(bins)
 
     #Remove bins that have at least 5% overlap with blacklist by size
-    bins_filtered = bins.intersect(blacklist, v=True, f=overlap)
+    blist = pybedtools.BedTool(blacklist)
+    bins_filtered = bins.intersect(blist, v=True, f=overlap)
 
     #Filter bam
     mappings = filter_mappings(bam, mode)
