@@ -30,7 +30,7 @@ Normalized coverage is calculated by ```binCov.py``` on a per-chromosome basis. 
 
 There are two approaches to parallelization, depending on your available computational resources. Examples are given below using LSF as a scheduler, but could be easily configured to your scheduler/environment.  
 
-**Fully parallelized approach**
+**Fully parallelized approach** (almost always preferable)
 ```
 #!/bin/bash  
 while read sample; do
@@ -46,7 +46,7 @@ done < list_of_samples.txt
 
 Alternatively, if available cores are limited or sample sizes are large, a wrapper script, ```WG_binCov.sh```, will calculate normalized coverage for a set of contigs in serial from a single bam.  
 
-**Semi-parallelized approach** (preferred if available cores are substantially fewer than [#contigs x #samples])
+**Semi-parallelized approach** (preferred if available cores are dramatically fewer than [#contigs x #samples])
 ```
 #!/bin/bash  
 while read sample; do
