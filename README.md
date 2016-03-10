@@ -9,6 +9,7 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 ## Table of Contents  
 #### Examples  
 - [Example WGD workflow](https://github.com/RCollins13/WGD#example-wgd-workflow)  
+- [CNV visualization and annotation](https://github.com/RCollins13/WGD#cnv-visualization-and-annotation)
 
 #### Script documentation  
 - [binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
