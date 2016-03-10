@@ -54,12 +54,11 @@ def filter_mappings(bam, mode='nucleotide'):
                                  str(read.reference_end)]) + '\n'
             else:
                 if read.is_read1 and read.is_proper_pair:
-                    mincoord = min(str(read.reference_start),
-                                   str(read.next_reference_start))
-                    maxcoord = max(str(read.reference_start),
-                                   str(read.next_reference_start))
-                    yield '\t'.join([read.reference_name, 
-                                     mincoord, maxcoord]) + '\n'
+                    start, end = sorted(read.reference_start,
+                                        read.next_reference_start)
+                    if start < end:
+                        yield '\t'.join([read.reference_name,
+                                         str(start), str(end)]) + '\n'
 
 
 #Function to evaluate nucleotide or physical coverage
