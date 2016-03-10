@@ -42,13 +42,13 @@ while read sample; do
 done < list_of_samples.txt
 ```  
 
-Alternatively, if available cores are limited or sample sizes are large, a wrapper script, ```WG_binCov.py```, will calculate normalized coverage for a set of contigs in serial from a single bam.  
+Alternatively, if available cores are limited or sample sizes are large, a wrapper script, ```WG_binCov.sh```, will calculate normalized coverage for a set of contigs in serial from a single bam.  
 
 **Semi-parallelized approach** (preferred if available cores are substantially fewer than [#contigs x #samples])
 ```
 #!/bin/bash  
 while read sample; do
-  bsub "WG_binCov.py ${sample}.bam ${sample} `pwd` \
+  bsub "WG_binCov.sh ${sample}.bam ${sample} `pwd` \
   -L list_of_contigs.txt \
   -b 100000 \
   -m nucleotide \
@@ -108,4 +108,24 @@ optional arguments:
 ---  
 
 ### WG_binCov.sh
-Wrapper for serialized execution of binCov.py across multiple chromosomes 
+Wrapper for serialized execution of binCov.py across multiple chromosomes for an individual sample  
+```
+usage: WG_binCov.sh [-h] [-b BINSIZE] [-m MODE] 
+										[-L CONTIGS] [-x BLACKLIST] [-v OVERLAP] 
+										BAM ID OUTDIR
+
+Wrapper for serialized execution of binCov.py across multiple chromosomes
+
+Positional arguments:
+	BAM			Input bam
+	ID			Sample ID
+	OUTDIR	Output directory
+
+Optional arguments:
+	-h	HELP				Show this help message and exit
+	-b	BINSIZE			Bin size in bp (default: 1000)
+	-m	MODE				Evaluate physical or nucleotide coverage (default: nucleotide)
+	-L	CONTIGS			List of contigs to evaluate (default: all contigs in bam header)
+	-x	BLACKLIST		BED file of regions to ignore
+	-v	OVERLAP			Maximum tolerated blacklist overlap before excluding bin
+```
