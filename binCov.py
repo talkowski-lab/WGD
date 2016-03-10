@@ -133,7 +133,7 @@ def main():
 
     #Get coverage & write out
     coverage = binCov(args.bam, args.chr, args.binsize,
-                      args.mode, args.blacklist)
+                      args.mode, args.overlap, args.blacklist)
     coverage.saveas(args.cov_out)
     call('sort -Vk1,1 -k2,2n -o ' + args.cov_out + ' ' + args.cov_out,
          shell=True)
