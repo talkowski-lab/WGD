@@ -54,8 +54,10 @@ def filter_mappings(bam, mode='nucleotide'):
                                  str(read.reference_end)]) + '\n'
             else:
                 if read.is_read1 and read.is_proper_pair:
-                    fstart, fend = sorted(int(read.reference_start),
-                                        int(read.next_reference_start))
+                    fstart = sorted(int(read.reference_start),
+                                    int(read.next_reference_start))[0]
+                    fend = sorted(int(read.reference_start),
+                                  int(read.next_reference_start))[1]
                     if fstart < fend:
                         yield '\t'.join([read.reference_name,
                                          str(fstart), str(fend)]) + '\n'
