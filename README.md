@@ -103,5 +103,7 @@ optional arguments:
 - Bins will be ignored automatically if they share at least ```-v``` percent overlap by size with blacklisted regions (```-x``` or ```--blacklist```).  
 - Currently uses ```bedtools coverage``` syntax assuming ```bedtools``` version pre-2.24.0 (i.e. ```-a``` is features and ```-b``` is intervals for which to calculate coverage; this was reversed starting in ```bedtools v2.24.0```)  
 
+---  
+
 ### WG_binCov.py
 Wrapper for serialized execution of binCov.py across multiple chromosomes 
