@@ -13,8 +13,46 @@ import sys
 import pysam
 import pybedtools
 
+#Define exception class for invalid coverage modes
+class InvalidModeError(Exception):
+    """Invalid coverage mode"""
+
+#Function to return read or fragment intervals from pysam.AlignmentFile
+def filter_mappings(bam, mode='nucleotide'):
+    """
+    Generates bed intervals from a bam for a specific chromosome corresponding
+    either to read coordinates or fragment coordinates
+
+    Parameters
+    ----------
+    bam : pysam.AlignmentFile
+        Input bam
+    mode : str, optional
+        'physical' or 'nucleotide' (default: 'physical')
+
+    Returns
+    ------
+    mappings : BedTool
+        Read or fragment intervals (depending on mode)
+    """
+
+    #Sanity check mode
+    if mode not in 'nucleotide physical'.split():
+        raise InvalidModeError('Invalid mode: ' + mode + 
+                        ' (options: nucleotide, physical)')
+
+    #For nucleotide mode, return non-duplicate primary read mappings
+    if mode == 'nucleotide':
+        for read in bam:
+            if not any(read.is_duplicate or read.is_unmapped or 
+                       read.is_secondary or read.is_supplementary):
+                yield '\t'.join([read.reference_name, str(read.reference_start),
+                                 str(read.reference_end)]) + '\n'
+
+pybedtools.BedTool(filter_mappings(bam.fetch('22')))
+
 #Function to evaluate nucleotide coverage
-def nuc_binCov(bam, chr, binsize, blacklist = None):
+def nuc_binCov(bam, chr, binsize, blacklist=None):
 	"""
     Generates non-duplicate, primary-aligned nucleotide coverage in regular bin
     sizes on a specified chromosome from a coordinate-sorted bamfile
@@ -42,8 +80,15 @@ def nuc_binCov(bam, chr, binsize, blacklist = None):
 		return (read.is_secondary or read.is_duplicate or
 				read.is_supplementary or read.is_unmapped)
 
+
 	#Subset bam for relevant reads and convert to BedTool
-	subbam = pybedtools.BedTool(read for read in bam.fetch(str(chr)) if _filter(read) is False)
+	subbam = pybedtools.BedTool().bam_to_bed(read for read in bam.fetch(str(chr)) if _filter(read) is False)
+
+    subbam = pysam.AlignmentFile("-", "w", header=bam.header)
+    for read in bam.fetch(str(chr)):
+         if not _filter(read):
+            subbam.write(read)
+    mappings = subbam.bam_to_bed()
 	
 	#Instantiate coverage bins and convert to BedTool
 	maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[str(chr)]
@@ -58,7 +103,7 @@ def nuc_binCov(bam, chr, binsize, blacklist = None):
 	bins_filtered = bins.intersect(blacklist, v=True, f=0.05)
 
 	#Generate & return coverage
-	coverage = subbam.coverage(bins_filtered, counts=True, abam=True)
+	coverage = subbam.coverage(bins_filtered, counts=True)
 	return coverage
 
 #Function to evaluate physical coverage
@@ -93,7 +138,7 @@ def phys_binCov(bam, chr, binsize, blacklist = None):
 				read.mate_is_unmapped or (not read.is_proper_pair))
 
 	#Subset bam for relevant reads and convert to BedTool
-	nbam = (bam.fetch(str(chr))).
+	nbam = bam.fetch(str(chr))
 	nbam = 
 	subbam = pybedtools.BedTool(read for read in bam.fetch(str(chr)) if _filter(read) is False)
 	
