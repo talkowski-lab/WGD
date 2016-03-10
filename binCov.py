@@ -30,7 +30,7 @@ def filter_mappings(bam, mode='nucleotide'):
     ----------
     bam : pysam.AlignmentFile
         Input bam
-    mode : str, optional
+    mode : str
         'physical' or 'nucleotide' (default: 'physical')
 
     Returns
@@ -56,7 +56,7 @@ def filter_mappings(bam, mode='nucleotide'):
                 if read.is_read1 and read.is_proper_pair:
                     yield '\t'.join([read.reference_name,
                                      str(read.reference_start),
-                                     str(read.next_reference_start)])
+                                     str(read.next_reference_start)]) + '\n'
 
 
 #Function to evaluate nucleotide or physical coverage
