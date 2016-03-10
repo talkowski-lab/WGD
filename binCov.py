@@ -147,7 +147,7 @@ def main():
         ncoverage = coverage.to_dataframe(names = 'chr start end cov'.split())
         medcov = ncoverage.loc[ncoverage['cov'] > 0, 'cov'].median()
         ncoverage['cov'] = ncoverage['cov'] / medcov
-        ncoverage.to_csv(args.norm_out, sep='\t', index=False, header=False)
+        ncoverage.to_csv(args.norm_out[0], sep='\t', index=False, header=False)
         call(' '.split(['sort -Vk1,1 -k2,2n -o', args.norm_out, 
                         args.norm_out]), shell=True)
 
