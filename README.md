@@ -14,21 +14,33 @@ The WGD pipeline requires the following:
 - Bed-file of N-masked regions of the reference genome. These are available from [UCSC](http://genome.ucsc.edu/ "UCSC Genome Browser")  
 
 #### Step 1: Generate normalized coverage per chromosome on all libraries  
-Normalized coverage is calculated by ```binCov.py``` on a per-chromosome basis. Parallelization of this process is strongly encouraged.  
+Normalized coverage is calculated by ```binCov.py``` on a per-chromosome basis. For whole-genome dosage bias analyses, nucleotide coverage at bin sizes of at least 100kb is recommended. Parallelization of this process is strongly encouraged.  
 
 There are two approaches to parallelization, depending on your available computational resources. Examples are given below using LSF as a scheduler, but could be easily configured to your scheduler/environment.  
 
-**Parallel submission of all chromosomes from all samples**
+**Fully parallelized approach**
 ```
 #!/bin/bash  
 while read sample; do
   while read contig; do
-    bsub "binCov.py "
+    bsub "binCov.py -n ${sample}.${contig}.normCov.bed -b 100000 -m nucleotide -x /path/to/Nmask.bed ${sample}.bam ${contig} ${sample}.${contig}.rawCov.bed"
   done < list_of_contigs.txt
+done < list_of_samples.txt
+```  
+
+Alternatively, if available cores are limited or sample sizes are large, a wrapper script, ```WG_binCov.py```, will calculate normalized coverage for a set of contigs in serial from a single bam.  
+
+**Semi-parallelized approach** (preferred if available cores are substantially fewer than [#contigs x #samples])
+```
+#!/bin/bash  
+while read sample; do
+  bsub "binCov.py -L list_of_contigs.txt -b 100000 -m nucleotide -x /path/to/Nmask.bed ${sample}.bam ${sample} `pwd`"
 done < list_of_samples.txt
 ```
 
----
+---  
+## Script Documentation
+---  
 ### binCov.py
 Iterates through a single chromosome of a bam file and calculates either nucleotide or physical coverage in regularly segmented bins.
 ```
