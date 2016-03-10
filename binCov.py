@@ -42,7 +42,7 @@ def filter_mappings(bam, mode='nucleotide'):
     #Sanity check mode
     if mode not in 'nucleotide physical'.split():
         raise InvalidModeError('Invalid mode: ' + mode + 
-                        ' (options: nucleotide, physical)')
+                               ' (options: nucleotide, physical)')
 
     #For nucleotide mode, return non-duplicate primary read mappings
     for read in bam:
@@ -61,7 +61,7 @@ def filter_mappings(bam, mode='nucleotide'):
 
 #Function to evaluate nucleotide or physical coverage
 def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
-	"""
+    """
     Generates non-duplicate, primary-aligned nucleotide or physical coverage 
     in regular bin sizes on a specified chromosome from a coordinate-sorted
     bamfile
@@ -73,39 +73,39 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
     chr : string
         Chromosome to evaluate
     binsize : int
-    	Size of bins in bp
+        Size of bins in bp
     mode : str
         Evaluate 'nucleotide' or 'physical' coverage
     overlap : float
         Maximum tolerated blacklist overlap before excluding bin
     blacklist : string
-    	Path to blacklist BED file
+        Path to blacklist BED file
 
     Returns
     ------
     coverage : pybedtools.BedTool
         chr, start, end, coverage
-	"""
-	
-	#Create coverage bins and convert to BedTool
-	maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[str(chr)]
-	bin_starts = range(0, maxchrpos - binsize, binsize)
-	bin_stops = range(binsize, maxchrpos, binsize)
-	bins = []
-	for i in range(0, len(bin_starts)-1):
-		bins.append([chr, bin_starts[i], bin_stops[i]])
-	bins = pybedtools.BedTool(bins)
+    """
+    
+    #Create coverage bins and convert to BedTool
+    maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[str(chr)]
+    bin_starts = range(0, maxchrpos - binsize, binsize)
+    bin_stops = range(binsize, maxchrpos, binsize)
+    bins = []
+    for i in range(0, len(bin_starts)-1):
+        bins.append([chr, bin_starts[i], bin_stops[i]])
+    bins = pybedtools.BedTool(bins)
 
-	#Remove bins that have at least 5% overlap with blacklist by size
-	bins_filtered = bins.intersect(blacklist, v=True, f=overlap)
+    #Remove bins that have at least 5% overlap with blacklist by size
+    bins_filtered = bins.intersect(blacklist, v=True, f=overlap)
 
     #Filter bam
-    mappings = filter_mappings(bam.fetch(chr), mode)
+    mappings = filter_mappings(bam, mode)
     bambed = pybedtools.BedTool(mappings)
 
-	#Generate & return coverage
-	coverage = bambed.coverage(bins_filtered, counts=True)
-	return coverage
+    #Generate & return coverage
+    coverage = bambed.coverage(bins_filtered, counts=True)
+    return coverage
 
 
 #Main function
@@ -117,22 +117,22 @@ def main():
     parser.add_argument('chr', help='Contig to evaluate')
     parser.add_argument('cov_out', help='Output bed file of raw coverage')
     parser.add_argument('-n', '--norm_out', nargs=1,
-    					help='Output bed file of normalized coverage')
+                        help='Output bed file of normalized coverage')
     parser.add_argument('-b', '--binsize', type=int, default=1000,
                         help='Bin size in bp (default: 1000)')
     parser.add_argument('-m', '--mode', default='nucleotide',
-    					choices = ['nucleotide', 'physical'],
+                        choices = ['nucleotide', 'physical'],
                         help='Evaluate nucleotide or physical coverage '
                              '(default: nucleotide)')
     parser.add_argument('-x', '--blacklist', nargs=1,
-    	                help='BED file of regions to ignore')
+                        help='BED file of regions to ignore')
     parser.add_argument('-v', '--overlap', nargs=1, type=float, default=0.05,
-    	   				help='Maximum tolerated blacklist overlap before '
-    	   				      'excluding bin')
+                           help='Maximum tolerated blacklist overlap before '
+                                 'excluding bin')
     args = parser.parse_args()
 
     #Get coverage & write out
-	coverage = binCov(args.bam, args.chr, args.binsize,
+    coverage = binCov(args.bam, args.chr, args.binsize,
                       args.mode, args.blacklist)
     coverage.saveas(args.cov_out)
     call('sort -Vk1,1 -k2,2n -o ' + args.cov_out + ' ' + args.cov_out,
