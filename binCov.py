@@ -146,7 +146,7 @@ def main():
         ncoverage['cov'] = ncoverage['cov'] / medcov
         ncoverage.to_csv(args.norm_out[0], sep='\t', index=False, header=False)
         call(' '.split(['sort -Vk1,1 -k2,2n -o', args.norm_out[0], 
-                        args.norm_out[0]], shell=True)
+                        args.norm_out[0]]), shell=True)
 
 
 #Main block
