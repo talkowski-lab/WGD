@@ -30,12 +30,28 @@ EOF
 }
 
 
-#Read arguments
-nperm=10000
-while getopts ":n:h" opt; do
+#Parse arguments
+binsize=1000
+mode=nucleotide
+contigs=DEFAULT
+blist=NONE
+v=0.05
+while getopts ":b:m:L:x:v:h" opt; do
 	case "$opt" in
-		n)
-			nperm=$OPTARG
+		b)
+			binsize=${OPTARG}
+			;;
+		m)
+			mode=${OPTARG}
+			;;
+		L)
+			contigs=${OPTARG}
+			;;
+		x)
+			blist=${OPTARG}
+			;;
+		v)
+			v=${OPTARG}
 			;;
 		h)
 			usage
@@ -43,18 +59,18 @@ while getopts ":n:h" opt; do
 			;;
 	esac
 done
-shift $(( OPTIND - 1))
-l1=$1 #first gene list
-l2=$2 #second gene list
-ref=$3 #reference gene list
+shift $(( ${OPTIND} - 1))
+bam=$1
+ID=$2
+OUTDIR=$3
 
 #Check positional arguments
-if [ -z ${l1} ] || [ -z ${l2} ] || [ -z ${ref} ]; then
+if [ -z ${bam} ] || [ -z ${ID} ] || [ -z ${OUTDIR} ]; then
 	usage
 	exit 0
 fi
 
 
-bam=$1
-ID=$2
-OUTDIR=$3
+
+
+
