@@ -29,7 +29,6 @@ Optional arguments:
 EOF
 }
 
-
 #Parse arguments
 binsize=1000
 mode=nucleotide
@@ -70,6 +69,18 @@ if [ -z ${bam} ] || [ -z ${ID} ] || [ -z ${OUTDIR} ]; then
 	exit 0
 fi
 
+#Determine list of contigs to use (note: requires samtools)
+if [ ${contigs} == "DEFAULT" ]; then
+	contigs_list=mktemp
+	samtools view -H ${bam} | fgrep -w "@SQ" | awk '{ print $2 }' | cut -d\: -f2 > ${contigs_list}
+else
+	contigs_list=${contigs}
+fi
+
+#Run binCov.py on all contigs
+spath=$( readlink -f $0 )
+echo ${spath}
+#while read contig; do
 
 
 
