@@ -101,7 +101,7 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
         blist = pybedtools.BedTool(blacklist)
     except:
         import pdb
-        pdb.set_break()
+        pdb.set_trace()
     bins_filtered = bins.intersect(blist, v=True, f=overlap)
 
     #Filter bam
