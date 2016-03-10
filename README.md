@@ -137,3 +137,5 @@ Optional arguments:
   -x  BLACKLIST    BED file of regions to ignore
   -v  OVERLAP      Maximum tolerated blacklist overlap before excluding bin
 ```
+**Usage Notes:**  
+- Contents of arguments are not checked; it's up to the user to ensure they're feeding appropriate files and values.  
