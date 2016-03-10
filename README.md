@@ -12,7 +12,7 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 
 #### Script documentation  
 - [binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
-- [WG_binCov.py](https://github.com/RCollins13/WGD#wg_bincovpy)  
+- [WG_binCov.sh](https://github.com/RCollins13/WGD#wg_bincovsh)  
 
 --- 
 
