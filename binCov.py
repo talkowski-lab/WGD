@@ -98,41 +98,40 @@ def nuc_binCov(bam, chr, binsize, blacklist=None):
 	coverage = subbam.coverage(bins_filtered, counts=True)
 	return coverage
 
-#Function to evaluate physical coverage
-def phys_binCov(bam, chr, binsize, blacklist = None):
-	"""
-    Generates non-duplicate, primary-aligned proper pair physical coverage
-    in regular bin sizes on a specified chromosome from a coordinate-sorted
-    bamfile
+# #Function to evaluate physical coverage
+# def phys_binCov(bam, chr, binsize, blacklist = None):
+# 	"""
+#     Generates non-duplicate, primary-aligned proper pair physical coverage
+#     in regular bin sizes on a specified chromosome from a coordinate-sorted
+#     bamfile
 
-    Parameters
-    ----------
-    bam : pysam.AlignmentFile
-        Input bam
-    chr : string
-        Chromosome to evaluate
-    binsize : int
-    	Size of bins in bp
-    blacklist : string
-    	Path to blacklist BED file
+#     Parameters
+#     ----------
+#     bam : pysam.AlignmentFile
+#         Input bam
+#     chr : string
+#         Chromosome to evaluate
+#     binsize : int
+#     	Size of bins in bp
+#     blacklist : string
+#     	Path to blacklist BED file
 
-    Returns
-    ------
-    coverage : list
-        chr, start, end, coverage
-	"""
+#     Returns
+#     ------
+#     coverage : list
+#         chr, start, end, coverage
+# 	"""
 
-	#Define read filtering criteria
-	#If True, read fails filtering
-	def _filter(read):
-		return (read.is_secondary or read.is_duplicate or
-				read.is_supplementary or read.is_unmapped or
-				read.mate_is_unmapped or (not read.is_proper_pair))
+# 	#Define read filtering criteria
+# 	#If True, read fails filtering
+# 	def _filter(read):
+# 		return (read.is_secondary or read.is_duplicate or
+# 				read.is_supplementary or read.is_unmapped or
+# 				read.mate_is_unmapped or (not read.is_proper_pair))
 
-	#Subset bam for relevant reads and convert to BedTool
-	nbam = bam.fetch(str(chr))
-	nbam = 
-	subbam = pybedtools.BedTool(read for read in bam.fetch(str(chr)) if _filter(read) is False)
+# 	#Subset bam for relevant reads and convert to BedTool
+# 	nbam = bam.fetch(str(chr))
+# 	subbam = pybedtools.BedTool(read for read in bam.fetch(str(chr)) if _filter(read) is False)
 	
 	# #Convert bam to bed of proper fragments
 	# fragments =  subbam.bam_to_bed(bedpe=True)
