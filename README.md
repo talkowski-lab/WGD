@@ -8,11 +8,11 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 ---  
 ## Table of Contents  
 #### Examples  
-- [Example WGD workflow](http://genome.ucsc.edu/)  
+- [Example WGD workflow](https://github.com/RCollins13/WGD#example-wgd-workflow)  
 
 #### Script documentation  
 - [binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
-- [WG_binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
+- [WG_binCov.py](https://github.com/RCollins13/WGD#wg_bincovpy)  
 
 ### Example WGD workflow  
 #### Prerequisites  
