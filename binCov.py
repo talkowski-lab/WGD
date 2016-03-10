@@ -34,7 +34,6 @@ def nuc_binCov(bam, chr, binsize, blacklist = None):
     ------
     coverage : list
         chr, start, end, coverage
-
 	"""
 
 	#Define read filtering criteria
@@ -59,8 +58,63 @@ def nuc_binCov(bam, chr, binsize, blacklist = None):
 	bins_filtered = bins.intersect(blacklist, v=True, f=0.05)
 
 	#Generate & return coverage
-	coverage = bins_filtered.coverage(subbam, counts=True, sorted=True)
+	coverage = bins_filtered.coverage(subbam, counts=True)
 	return coverage
+
+#Function to evaluate physical coverage
+def nuc_binCov(bam, chr, binsize, blacklist = None):
+	"""
+    Generates non-duplicate, primary-aligned proper pair physical coverage
+    in regular bin sizes on a specified chromosome from a coordinate-sorted
+    bamfile
+
+    Parameters
+    ----------
+    bam : pysam.AlignmentFile
+        Input bam
+    chr : string
+        Chromosome to evaluate
+    binsize : int
+    	Size of bins in bp
+    blacklist : string
+    	Path to blacklist BED file
+
+    Returns
+    ------
+    coverage : list
+        chr, start, end, coverage
+	"""
+
+	#Define read filtering criteria
+	#If True, read fails filtering
+	def _filter(read):
+		return (read.is_secondary or read.is_duplicate or
+				read.is_supplementary or read.is_unmapped or
+				read.mate_is_unmapped or (not read.is_proper_pair))
+
+	#Subset bam for relevant reads and convert to BedTool
+	subbam = (read for read in bam.fetch(str(chr)) if _filter(read) is False)
+	nbam = 
+	subbam = pybedtools.BedTool(read for read in bam.fetch(str(chr)) if _filter(read) is False)
+	
+	# #Convert bam to bed of proper fragments
+	# fragments =  subbam.bam_to_bed(bedpe=True)
+
+	# #Instantiate coverage bins and convert to BedTool
+	# maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[str(chr)]
+	# bin_starts = range(0, maxchrpos - binsize, binsize)
+	# bin_stops = range(binsize, maxchrpos, binsize)
+	# bins = []
+	# for i in range(0, len(bin_starts)-1):
+	# 	bins.append([chr, bin_starts[i], bin_stops[i]])
+	# bins = pybedtools.BedTool(bins)
+
+	# #Remove bins that have at least 5% overlap with blacklist by size
+	# bins_filtered = bins.intersect(blacklist, v=True, f=0.05)
+
+	# #Generate & return coverage
+	# coverage = bins_filtered.coverage(subbam, counts=True, sorted=True)
+	# return coverage
 
 #Main function
 def main():
