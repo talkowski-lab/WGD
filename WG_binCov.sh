@@ -78,8 +78,6 @@ else
 fi
 
 #Run binCov.py on all contigs
-readlink -f $0
-dirname $( readlink -f $0 )
 spath=$( dirname $( readlink -f $0 ) )
 echo ${spath}
 #while read contig; do
