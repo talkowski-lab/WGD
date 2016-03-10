@@ -49,8 +49,6 @@ def filter_mappings(bam, mode='nucleotide'):
                 yield '\t'.join([read.reference_name, str(read.reference_start),
                                  str(read.reference_end)]) + '\n'
 
-pybedtools.BedTool(filter_mappings(bam.fetch('22')))
-
 #Function to evaluate nucleotide coverage
 def nuc_binCov(bam, chr, binsize, blacklist=None):
 	"""
@@ -83,12 +81,6 @@ def nuc_binCov(bam, chr, binsize, blacklist=None):
 
 	#Subset bam for relevant reads and convert to BedTool
 	subbam = pybedtools.BedTool().bam_to_bed(read for read in bam.fetch(str(chr)) if _filter(read) is False)
-
-    subbam = pysam.AlignmentFile("-", "w", header=bam.header)
-    for read in bam.fetch(str(chr)):
-         if not _filter(read):
-            subbam.write(read)
-    mappings = subbam.bam_to_bed()
 	
 	#Instantiate coverage bins and convert to BedTool
 	maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[str(chr)]
