@@ -4,14 +4,17 @@
 # Distributed under terms of the MIT license.
 
 """
-Calculates non-duplicate primary-aligned binned coverage of a chromosome from an input BAM file
+Calculates non-duplicate primary-aligned binned coverage
+of a chromosome from an input BAM file
 """
 
 #Import libraries
 import argparse
 import sys
+from subprocess import call
 import pysam
 import pybedtools
+import pandas as pd
 
 #Define exception class for invalid coverage modes
 class InvalidModeError(Exception):
@@ -42,18 +45,26 @@ def filter_mappings(bam, mode='nucleotide'):
                         ' (options: nucleotide, physical)')
 
     #For nucleotide mode, return non-duplicate primary read mappings
-    if mode == 'nucleotide':
-        for read in bam:
-            if not any([read.is_duplicate, read.is_unmapped,
-                       read.is_secondary, read.is_supplementary]):
-                yield '\t'.join([read.reference_name, str(read.reference_start),
+    for read in bam:
+        if not any([read.is_duplicate, read.is_unmapped,
+                   read.is_secondary, read.is_supplementary]):
+            if mode == 'nucleotide':
+                yield '\t'.join([read.reference_name,
+                                 str(read.reference_start),
                                  str(read.reference_end)]) + '\n'
+            else:
+                if read.is_read1 and read.is_proper_pair:
+                    yield '\t'.join([read.reference_name,
+                                     str(read.reference_start),
+                                     str(read.next_reference_start)])
 
-#Function to evaluate nucleotide coverage
-def nuc_binCov(bam, chr, binsize, blacklist=None):
+
+#Function to evaluate nucleotide or physical coverage
+def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
 	"""
-    Generates non-duplicate, primary-aligned nucleotide coverage in regular bin
-    sizes on a specified chromosome from a coordinate-sorted bamfile
+    Generates non-duplicate, primary-aligned nucleotide or physical coverage 
+    in regular bin sizes on a specified chromosome from a coordinate-sorted
+    bamfile
 
     Parameters
     ----------
@@ -63,26 +74,20 @@ def nuc_binCov(bam, chr, binsize, blacklist=None):
         Chromosome to evaluate
     binsize : int
     	Size of bins in bp
+    mode : str
+        Evaluate 'nucleotide' or 'physical' coverage
+    overlap : float
+        Maximum tolerated blacklist overlap before excluding bin
     blacklist : string
     	Path to blacklist BED file
 
     Returns
     ------
-    coverage : list
+    coverage : pybedtools.BedTool
         chr, start, end, coverage
 	"""
-
-	#Define read filtering criteria
-	#If True, read fails filtering
-	def _filter(read):
-		return (read.is_secondary or read.is_duplicate or
-				read.is_supplementary or read.is_unmapped)
-
-
-	#Subset bam for relevant reads and convert to BedTool
-	subbam = pybedtools.BedTool().bam_to_bed(read for read in bam.fetch(str(chr)) if _filter(read) is False)
 	
-	#Instantiate coverage bins and convert to BedTool
+	#Create coverage bins and convert to BedTool
 	maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[str(chr)]
 	bin_starts = range(0, maxchrpos - binsize, binsize)
 	bin_stops = range(binsize, maxchrpos, binsize)
@@ -92,65 +97,16 @@ def nuc_binCov(bam, chr, binsize, blacklist=None):
 	bins = pybedtools.BedTool(bins)
 
 	#Remove bins that have at least 5% overlap with blacklist by size
-	bins_filtered = bins.intersect(blacklist, v=True, f=0.05)
+	bins_filtered = bins.intersect(blacklist, v=True, f=overlap)
+
+    #Filter bam
+    mappings = filter_mappings(bam.fetch(chr), mode)
+    bambed = pybedtools.BedTool(mappings)
 
 	#Generate & return coverage
-	coverage = subbam.coverage(bins_filtered, counts=True)
+	coverage = bambed.coverage(bins_filtered, counts=True)
 	return coverage
 
-# #Function to evaluate physical coverage
-# def phys_binCov(bam, chr, binsize, blacklist = None):
-# 	"""
-#     Generates non-duplicate, primary-aligned proper pair physical coverage
-#     in regular bin sizes on a specified chromosome from a coordinate-sorted
-#     bamfile
-
-#     Parameters
-#     ----------
-#     bam : pysam.AlignmentFile
-#         Input bam
-#     chr : string
-#         Chromosome to evaluate
-#     binsize : int
-#     	Size of bins in bp
-#     blacklist : string
-#     	Path to blacklist BED file
-
-#     Returns
-#     ------
-#     coverage : list
-#         chr, start, end, coverage
-# 	"""
-
-# 	#Define read filtering criteria
-# 	#If True, read fails filtering
-# 	def _filter(read):
-# 		return (read.is_secondary or read.is_duplicate or
-# 				read.is_supplementary or read.is_unmapped or
-# 				read.mate_is_unmapped or (not read.is_proper_pair))
-
-# 	#Subset bam for relevant reads and convert to BedTool
-# 	nbam = bam.fetch(str(chr))
-# 	subbam = pybedtools.BedTool(read for read in bam.fetch(str(chr)) if _filter(read) is False)
-	
-	# #Convert bam to bed of proper fragments
-	# fragments =  subbam.bam_to_bed(bedpe=True)
-
-	# #Instantiate coverage bins and convert to BedTool
-	# maxchrpos = {d['SN']: d['LN'] for d in bam.header['SQ']}[str(chr)]
-	# bin_starts = range(0, maxchrpos - binsize, binsize)
-	# bin_stops = range(binsize, maxchrpos, binsize)
-	# bins = []
-	# for i in range(0, len(bin_starts)-1):
-	# 	bins.append([chr, bin_starts[i], bin_stops[i]])
-	# bins = pybedtools.BedTool(bins)
-
-	# #Remove bins that have at least 5% overlap with blacklist by size
-	# bins_filtered = bins.intersect(blacklist, v=True, f=0.05)
-
-	# #Generate & return coverage
-	# coverage = bins_filtered.coverage(subbam, counts=True, sorted=True)
-	# return coverage
 
 #Main function
 def main():
@@ -175,19 +131,21 @@ def main():
     	   				      'excluding bin')
     args = parser.parse_args()
 
-    #Open outfiles
-    fcovout = open(args.cov_out, 'w')
-    if args.norm_out is not None:
-	    fnormout = open(args.norm_out, 'w')
+    #Get coverage & write out
+	coverage = binCov(args.bam, args.chr, args.binsize,
+                      args.mode, args.blacklist)
+    coverage.saveas(args.cov_out)
+    call('sort -Vk1,1 -k2,2n -o ' + args.cov_out + ' ' + args.cov_out,
+         shell=True)
 
-    #Get nucleotide coverage
-    if args.mode == 'nucleotide':
-    	coverage = nuc_binCov(args.bam, args.chr, args.binsize, args.blacklist)
-
-    #Close outfiles
-    fcovout.close()
+    #Normalize coverage (if optioned) & write out
     if args.norm_out is not None:
-	    fnormout.close()
+        ncoverage = coverage.to_dataframe(names = 'chr start end cov'.split())
+        medcov = ncoverage.loc[ncoverage['cov'] > 0, 'cov'].median()
+        ncoverage['cov'] = ncoverage['cov'] / medcov
+        ncoverage.to_csv(args.norm_out, sep='\t', index=False, header=False)
+        call('sort -Vk1,1 -k2,2n -o ' + args.norm_out + ' ' + args.norm_out,
+             shell=True)
 
 
 #Main block
