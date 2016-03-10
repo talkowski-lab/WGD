@@ -100,7 +100,7 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
     bins = pybedtools.BedTool(bins)
 
     #Remove bins that have at least 5% overlap with blacklist by size
-    blist = pybedtools.BedTool(blacklist[0])
+    blist = pybedtools.BedTool(blacklist)
     bins_filtered = bins.intersect(blist, v=True, f=overlap)
 
     #Filter bam
@@ -120,7 +120,7 @@ def main():
                         help='Input bam')
     parser.add_argument('chr', help='Contig to evaluate')
     parser.add_argument('cov_out', help='Output bed file of raw coverage')
-    parser.add_argument('-n', '--norm_out', nargs=1,
+    parser.add_argument('-n', '--norm_out', nargs=1, type=str,
                         help='Output bed file of normalized coverage')
     parser.add_argument('-b', '--binsize', type=int, default=1000,
                         help='Bin size in bp (default: 1000)')
@@ -128,7 +128,7 @@ def main():
                         choices = ['nucleotide', 'physical'],
                         help='Evaluate nucleotide or physical coverage '
                              '(default: nucleotide)')
-    parser.add_argument('-x', '--blacklist', nargs=1,
+    parser.add_argument('-x', '--blacklist', nargs=1, type=str,
                         help='BED file of regions to ignore')
     parser.add_argument('-v', '--overlap', nargs=1, type=float, default=0.05,
                            help='Maximum tolerated blacklist overlap before '
