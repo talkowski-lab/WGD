@@ -23,7 +23,7 @@ EOF
 }
 
 #Parse arguments
-OUTFILE = /dev/stdout
+OUTFILE=/dev/stdout
 while getopts ":o:h" opt; do
 	case "$opt" in
 		h)
