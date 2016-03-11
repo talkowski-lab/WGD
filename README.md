@@ -59,7 +59,18 @@ done < list_of_samples.txt
 ```
 
 #### Step 2: Create normalized dosage matrix for cohort  
-TBD  
+Once ```binCov.py``` has completed on all desired contigs for each sample, concatenate the normalized coverage beds per sample into a single bed file. Sorting or ordering of the concatenated bed file is not necessary.  
+
+Creating the coverage matrix can be done easily with ```coreutils```, but is automated by ```makeMatrix.sh```, as follows:  
+
+An example of the input file (```SAMPLES```):  
+```
+sample1    /path/to/sample1.cov.bed
+sample2    /path/to/sample2.cov.bed
+sample3    /path/to/sample3.cov.bed
+...
+sampleN    /path/to/sampleN.cov.bed
+```  
 
 #### Step 3: Run WGD model  
 TBD  
