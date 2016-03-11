@@ -15,6 +15,7 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 #### Script documentation  
 - [binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
 - [WG_binCov.sh](https://github.com/RCollins13/WGD#wg_bincovsh)  
+- [makeMatrix.sh](https://github.com/RCollins13/WGD#makematrixsh)  
 
 --- 
 
@@ -61,9 +62,12 @@ done < list_of_samples.txt
 #### Step 2: Create normalized dosage matrix for cohort  
 Once ```binCov.py``` has completed on all desired contigs for each sample, concatenate the normalized coverage beds per sample into a single bed file. Sorting or ordering of the concatenated bed file is not necessary.  
 
-Creating the coverage matrix can be done easily with bash ```coreutils```, but is automated by ```makeMatrix.sh```, as follows:  
+Creating the coverage matrix can be done easily with bash ```coreutils```, but for sake of convenience has been automated by ```makeMatrix.sh```, as follows:  
+```
+makeMatrix.sh input.txt > normCov.matrix.bed
+```  
 
-An example of the input file (```SAMPLES```):  
+An example of the input file (```input.txt``` above):  
 ```
 sample1    /path/to/sample1.cov.bed
 sample2    /path/to/sample2.cov.bed
