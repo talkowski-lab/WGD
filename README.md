@@ -61,7 +61,7 @@ done < list_of_samples.txt
 #### Step 2: Create normalized dosage matrix for cohort  
 Once ```binCov.py``` has completed on all desired contigs for each sample, concatenate the normalized coverage beds per sample into a single bed file. Sorting or ordering of the concatenated bed file is not necessary.  
 
-Creating the coverage matrix can be done easily with ```coreutils```, but is automated by ```makeMatrix.sh```, as follows:  
+Creating the coverage matrix can be done easily with bash ```coreutils```, but is automated by ```makeMatrix.sh```, as follows:  
 
 An example of the input file (```SAMPLES```):  
 ```
