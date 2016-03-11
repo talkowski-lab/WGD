@@ -76,7 +76,7 @@ The rate-limiting step of the pipeline is ```binCov.py```, which scales linearly
 
 Physical coverage is marginally faster than nucleotide coverage. Bin sizes do not strongly influence runtime beyond 1kb, but bin sizes smaller than 1kb substantially increase runtime.  
 
-When optimal parallelization is employed with a standard LSF scheduler on [the Partners Healthcare Linux Cluster](https://rc.partners.org/kb/computational-resources/linux-cluster), approximately 10 ~40X PE150 Illumina human genomes will complete every 20 minutes.  
+When optimal parallelization is employed with a standard LSF scheduler on [the Partners Healthcare Linux Cluster](https://rc.partners.org/kb/computational-resources/linux-cluster), approximately 10 ~40X PE150 Illumina human genomes will complete every 20 minutes with roughly 200 cores running simultaneously.  
 
 --- 
 
