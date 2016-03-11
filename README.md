@@ -166,3 +166,21 @@ Optional arguments:
 ```
 **Usage Notes:**  
 - Contents of arguments are not checked; it's up to the user to ensure they're feeding appropriate files and values.  
+
+---  
+
+### makeMatrix.sh
+Helper tool to automate creation of sorted coverage matrices from binCov.py output bed files. Note that, in most cases, multiple chromosome outputs from binCov.py from the same sample should be concatenated before being passed to this tool.  
+```
+usage: makeMatrix.sh [-h] [-o OUTFILE] SAMPLES
+
+Helper tool to automate creation of sorted coverage matrices from
+binCov.py output bed files
+
+Positional arguments:
+  SAMPLES     List of samples and coverage files (tab-delimmed)
+
+Optional arguments:
+  -h  HELP      Show this help message and exit
+  -o  OUTFILE   Output file (default: stdout)
+```
