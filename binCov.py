@@ -135,7 +135,8 @@ def main():
     parser.add_argument('-x', '--blacklist', type=str,
                         help='BED file of regions to ignore')
     parser.add_argument('-p', '--presubsetted', dest='presubbed', 
-                        action='store_true')
+                        action='store_true', help='Boolean flag to indicate'
+                        ' if input bam is already subsetted to desired chr')
     parser.add_argument('-v', '--overlap', nargs=1, type=float, default=0.05,
                            help='Maximum tolerated blacklist overlap before '
                                  'excluding bin')
