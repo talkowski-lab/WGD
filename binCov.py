@@ -63,7 +63,8 @@ def filter_mappings(bam, mode='nucleotide'):
 
 
 #Function to evaluate nucleotide or physical coverage
-def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
+def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None,
+           presubbed=False):
     """
     Generates non-duplicate, primary-aligned nucleotide or physical coverage 
     in regular bin sizes on a specified chromosome from a coordinate-sorted
@@ -104,7 +105,10 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None):
     bins_filtered = bins.intersect(blist, v=True, f=overlap)
 
     #Filter bam
-    mappings = filter_mappings(bam.fetch(chr), mode)
+    if presubbed == True:
+        mappings = filter_mappings(bam, mode)
+    else:
+        mappings = filter_mappings(bam.fetch(chr), mode)
     bambed = pybedtools.BedTool(mappings)
 
     #Generate & return coverage
@@ -130,14 +134,18 @@ def main():
                              '(default: nucleotide)')
     parser.add_argument('-x', '--blacklist', type=str,
                         help='BED file of regions to ignore')
+    parser.add_argument('-p', '--presubsetted', dest='presubbed', 
+                        action='store_true')
     parser.add_argument('-v', '--overlap', nargs=1, type=float, default=0.05,
                            help='Maximum tolerated blacklist overlap before '
                                  'excluding bin')
+    parser.set_defaults(presubbed=False)
     args = parser.parse_args()
 
     #Get coverage & write out
     coverage = binCov(args.bam, args.chr, args.binsize,
-                      args.mode, args.overlap, args.blacklist)
+                      args.mode, args.overlap, args.blacklist, 
+                      args.presubbed)
     coverage.saveas(args.cov_out)
     call('sort -Vk1,1 -k2,2n -o ' + args.cov_out + ' ' + args.cov_out,
          shell=True)
