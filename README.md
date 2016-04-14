@@ -133,7 +133,8 @@ optional arguments:
                         subsetted to desired chr
   -v OVERLAP, --overlap OVERLAP
                         Maximum tolerated blacklist overlap before excluding
-                        bin```
+                        bin
+```  
 **Usage Notes:**  
 - Input bam file must be coordinate-sorted and indexed.  
 - Only non-duplicate primary-aligned reads or proper pairs are considered for 'nucleotide' and 'physical' mode, respectively.  
@@ -164,14 +165,14 @@ Optional arguments:
   -L  CONTIGS      List of contigs to evaluate (default: all contigs in bam header)
   -x  BLACKLIST    BED file of regions to ignore
   -v  OVERLAP      Maximum tolerated blacklist overlap before excluding bin
-```
+```  
 **Usage Notes:**  
 - Contents of arguments are not checked; it's up to the user to ensure they're feeding appropriate files and values.  
 
 ---  
 
 ### makeMatrix.sh
-Helper tool to automate creation of sorted coverage matrices from binCov.py output bed files. Note that, in most cases, multiple chromosome outputs from binCov.py from the same sample should be concatenated before being passed to this tool.  
+Helper tool to automate creation of sorted coverage matrices from binCov.py output bed files. Wraps ```bedtools unionbedg```. Note that, in most cases, multiple chromosome outputs from binCov.py from the same sample should be concatenated before being passed to this tool.  
 ```
 usage: makeMatrix.sh [-h] [-o OUTFILE] SAMPLES
 
