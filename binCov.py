@@ -135,7 +135,7 @@ def main():
                         choices = ['nucleotide', 'physical'],
                         help='Evaluate nucleotide or physical coverage '
                              '(default: nucleotide)')
-    parser.add_argument('-x', '--blacklist', type=str,
+    parser.add_argument('-x', '--blacklist', type=str, default=None,
                         help='BED file of regions to ignore')
     parser.add_argument('-p', '--presubsetted', dest='presubbed', 
                         action='store_true', help='Boolean flag to indicate'
