@@ -185,4 +185,6 @@ Positional arguments:
 Optional arguments:
   -h  HELP      Show this help message and exit
   -o  OUTFILE   Output file (default: stdout)
-```
+```  
+**Usage Notes:**  
+- Requires ```bedtools``` to be in your path ($PATH environment variable)    
