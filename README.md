@@ -107,7 +107,7 @@ The following are required to visualize CNVs:
 Iterates through a single chromosome of a bam file and calculates either nucleotide or physical coverage in regularly segmented bins.
 ```
 usage: binCov.py [-h] [-n NORM_OUT] [-b BINSIZE] [-m {nucleotide,physical}]
-                 [-x BLACKLIST] [-p] [-v OVERLAP]
+                 [-x BLACKLIST] [-p] [-v OVERLAP] [--oldBT]
                  bam chr cov_out
 
 Calculates non-duplicate primary-aligned binned coverage of a chromosome from
@@ -134,6 +134,8 @@ optional arguments:
   -v OVERLAP, --overlap OVERLAP
                         Maximum tolerated blacklist overlap before excluding
                         bin
+  --oldBT               Boolean flag to indicate if you are using a bedtools
+                        version pre-2.24.0
 ```  
 **Usage Notes:**  
 - Input bam file must be coordinate-sorted and indexed.  
