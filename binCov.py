@@ -144,13 +144,14 @@ def main():
                              '(default: nucleotide)')
     parser.add_argument('-x', '--blacklist', type=str, default=None,
                         help='BED file of regions to ignore')
-    parser.add_argument('-p', '--presubsetted', dest='presubbed', 
+    parser.add_argument('-p', '--presubsetted', dest='presubbed',
                         action='store_true', help='Boolean flag to indicate'
-                        ' if input bam is already subsetted to desired chr')
+                        ' if input bam is already subsetted to desired chr',
+                        default=False)
     parser.add_argument('-v', '--overlap', nargs=1, type=float, default=0.05,
                            help='Maximum tolerated blacklist overlap before '
                                  'excluding bin')
-    parser.add_argument('--oldBT', dest='oldBT',
+    parser.add_argument('--oldBT', dest='oldBT', default=False,
                         action='store_true', help='Boolean flag to indicate'
                         ' if you are using a bedtools version pre-2.24.0')
     parser.set_defaults(presubbed=False)
