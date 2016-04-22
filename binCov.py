@@ -64,7 +64,7 @@ def filter_mappings(bam, mode='nucleotide'):
 
 #Function to evaluate nucleotide or physical coverage
 def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None,
-           presubbed=False):
+           presubbed=False, oldBT=False):
     """
     Generates non-duplicate, primary-aligned nucleotide or physical coverage 
     in regular bin sizes on a specified chromosome from a coordinate-sorted
@@ -84,6 +84,10 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None,
         Maximum tolerated blacklist overlap before excluding bin
     blacklist : string
         Path to blacklist BED file
+    presubbed : boolean
+        Has the bam already been subsetted to the desired chromosome?
+    oldBT : boolean
+        Are you using a version of bedtools pre-2.24.0?
 
     Returns
     ------
@@ -115,7 +119,10 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05, blacklist=None,
     bambed = pybedtools.BedTool(mappings)
 
     #Generate & return coverage
-    coverage = bambed.coverage(bins_filtered, counts=True)
+    if oldBT == True:
+        coverage = bambed.coverage(bins_filtered, counts=True)
+    else:
+        coverage = bins_filtered.coverage(bambed, counts=True)
     return coverage
 
 
@@ -143,13 +150,16 @@ def main():
     parser.add_argument('-v', '--overlap', nargs=1, type=float, default=0.05,
                            help='Maximum tolerated blacklist overlap before '
                                  'excluding bin')
+    parser.add_argument('--oldBT', dest='oldBT',
+                        action='store_true', help='Boolean flag to indicate'
+                        ' if you are using a bedtools version pre-2.24.0')
     parser.set_defaults(presubbed=False)
     args = parser.parse_args()
 
     #Get coverage & write out
     coverage = binCov(args.bam, args.chr, args.binsize,
                       args.mode, args.overlap, args.blacklist, 
-                      args.presubbed)
+                      args.presubbed, args.oldBT)
     coverage.saveas(args.cov_out)
     call('sort -Vk1,1 -k2,2n -o ' + args.cov_out + ' ' + args.cov_out,
          shell=True)
