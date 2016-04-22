@@ -87,11 +87,9 @@ TBD
 ### Pipeline runtimes  
 **binCov.py**  
 
-The rate-limiting step of the pipeline is ```binCov.py```, which scales linearly with the number of reads processed at an approximate rate of 7 mins per 1M aligned 25bp reads and 13 mins per 1M aligned 150bp reads (single-core CPU, 6GB RAM, ≥1kb bins). This is the reason for maximizing parallelization where possible (see [earlier example](https://github.com/RCollins13/WGD#step-1-generate-normalized-coverage-per-chromosome-on-all-libraries)).  
+The rate-limiting step of the pipeline is ```binCov.py```, which scales linearly with the number of reads per library. A successful run of all 22 human autosomes for a conventional 30X Illumina 2x100bp or 2x150bp WGS library usually takes approximately 3-6 hours (single-core CPU, 2GB RAM, 5GB swap, 1kb bins). This is the reason for maximizing parallelization where possible (see [earlier example](https://github.com/RCollins13/WGD#step-1-generate-normalized-coverage-per-chromosome-on-all-libraries)).  
 
-Physical coverage is marginally faster than nucleotide coverage. Bin sizes do not strongly influence runtime beyond 1kb, but bin sizes smaller than 1kb substantially increase runtime.  
-
-When optimal parallelization is employed with a standard LSF scheduler on [the Partners Healthcare Linux Cluster](https://rc.partners.org/kb/computational-resources/linux-cluster), approximately 10 ~40X PE150 Illumina human genomes will complete every 20 minutes with roughly 200 cores running simultaneously.  
+Physical coverage is marginally faster than nucleotide coverage. Bin sizes ≥100bp do not strongly influence runtime.  
 
 --- 
 
