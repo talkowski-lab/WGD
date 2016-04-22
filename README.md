@@ -142,7 +142,7 @@ optional arguments:
 - Only non-duplicate primary-aligned reads or proper pairs are considered for 'nucleotide' and 'physical' mode, respectively.  
 - Normalized coverage is raw coverage per bin divided by median of all non-zero, non-blacklisted bins on the same contig.  
 - Bins will be ignored automatically if they share at least ```-v``` percent overlap by size with blacklisted regions (```-x``` or ```--blacklist```).  
-- Currently uses ```bedtools coverage``` syntax assuming ```bedtools``` version pre-2.24.0 (i.e. ```-a``` is features and ```-b``` is intervals for which to calculate coverage; this was reversed starting in ```bedtools v2.24.0```)  
+- Currently uses ```bedtools coverage``` syntax assuming ```bedtools``` version 2.24.0 or later (i.e. ```-a``` is bins and ```-b``` is reads; this was reversed starting in ```bedtools v2.24.0```). Specify option ```--oldBT``` to revert to bedtools syntax pre-2.24.0.  
 
 ---  
 
