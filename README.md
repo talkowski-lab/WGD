@@ -20,6 +20,8 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 --- 
 
 ### Example WGD workflow  
+#### Important Note Regarding Bedtools Compatibility  
+As of ```bedtools 2.24.0```, some arguments and parameters changed for ```bedtools coverage```, an essential element of the WGD workflow. The WGD pipeline has been tested with ```bedtools 2.20.1``` and ```bedtools 2.25.1```, thus includes compatibility for both "new" and "old" parameter specifications, but one step (```binCov.py```) will require an argument to specify which version of ```bedtools``` you are using. See more details in the [usage note for ```binCov.py```](https://github.com/RCollins13/WGD#bincovpy) 
 #### Prerequisites  
 The WGD pipeline requires the following:  
 - Coordinate-sorted, indexed bams for all samples
