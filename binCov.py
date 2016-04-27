@@ -125,7 +125,7 @@ def binCov(bam, chr, binsize, outfile, mode='nucleotide', overlap=0.05,
         coverage = bambed.coverage(bins_filtered, counts=True, output=outfile)
     else:
         coverage = bins_filtered.coverage(bambed, counts=True, output=outfile,
-                                          iobuf='1G', nobuf=True, sorted=True)
+                                          iobuf='1G', sorted=True)
 
 
 #Main function
