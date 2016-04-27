@@ -167,7 +167,9 @@ def main():
 
     #Normalize coverage (if optioned) & write out
     if args.norm_out is not None:
-        ncoverage = coverage.to_dataframe(names = 'chr start end cov'.split())
+        coverage_fromfile = pybedtools.BedTool(args.cov_out)
+        ncoverage = coverage_fromfile.to_dataframe(names = 
+                                                   'chr start end cov'.split())
         medcov = ncoverage.loc[ncoverage['cov'] > 0, 'cov'].median()
         ncoverage['cov'] = ncoverage['cov'] / medcov
         ncoverage.to_csv(args.norm_out, sep='\t', index=False, header=False)
