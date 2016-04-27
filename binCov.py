@@ -118,12 +118,11 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05,
         mappings = filter_mappings(bam.fetch(chr), mode)
     bambed = pybedtools.BedTool(mappings)
 
-    #Generate coverage & write to file
+    #Generate & return coverage
     if oldBT == True:
         coverage = bambed.coverage(bins_filtered, counts=True)
     else:
-        coverage = bins_filtered.coverage(bambed, counts=True,
-                                          iobuf='4G', sorted=True)
+        coverage = bins_filtered.coverage(bambed, counts=True, sorted=True)
     return coverage
 
 
