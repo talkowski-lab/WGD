@@ -63,7 +63,7 @@ def filter_mappings(bam, mode='nucleotide'):
 
 
 #Function to evaluate nucleotide or physical coverage
-def binCov(bam, chr, binsize, outfile, mode='nucleotide', overlap=0.05,
+def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05,
            blacklist=None, presubbed=False, oldBT=False):
     """
     Generates non-duplicate, primary-aligned nucleotide or physical coverage 
@@ -78,8 +78,6 @@ def binCov(bam, chr, binsize, outfile, mode='nucleotide', overlap=0.05,
         Chromosome to evaluate
     binsize : int
         Size of bins in bp
-    outfile : string
-        Full path to output file for coverage
     mode : str
         Evaluate 'nucleotide' or 'physical' coverage
     overlap : float
@@ -122,10 +120,11 @@ def binCov(bam, chr, binsize, outfile, mode='nucleotide', overlap=0.05,
 
     #Generate coverage & write to file
     if oldBT == True:
-        coverage = bambed.coverage(bins_filtered, counts=True, output=outfile)
+        coverage = bambed.coverage(bins_filtered, counts=True)
     else:
-        coverage = bins_filtered.coverage(bambed, counts=True, output=outfile,
+        coverage = bins_filtered.coverage(bambed, counts=True,
                                           iobuf='4G', sorted=True)
+    return coverage
 
 
 #Main function
@@ -160,17 +159,16 @@ def main():
     args = parser.parse_args()
 
     #Get coverage & write out
-    coverage = binCov(args.bam, args.chr, args.binsize, args.cov_out, 
+    coverage = binCov(args.bam, args.chr, args.binsize,
                       args.mode, args.overlap, args.blacklist, 
                       args.presubbed, args.oldBT)
+    coverage.saveas(args.cov_out)
     call('sort -Vk1,1 -k2,2n -o ' + args.cov_out + ' ' + args.cov_out,
          shell=True)
 
     #Normalize coverage (if optioned) & write out
     if args.norm_out is not None:
-        coverage_fromfile = pybedtools.BedTool(args.cov_out)
-        ncoverage = coverage_fromfile.to_dataframe(names = 
-                                                   'chr start end cov'.split())
+        ncoverage = coverage.to_dataframe(names = 'chr start end cov'.split())
         medcov = ncoverage.loc[ncoverage['cov'] > 0, 'cov'].median()
         ncoverage['cov'] = ncoverage['cov'] / medcov
         ncoverage.to_csv(args.norm_out, sep='\t', index=False, header=False)
