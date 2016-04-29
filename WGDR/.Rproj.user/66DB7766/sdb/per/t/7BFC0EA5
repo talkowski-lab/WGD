@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# Copyright (c) 2016 Ryan L. Collins <rlcollins@g.harvard.edu>\n# Distributed under terms of the MIT license.\n\n# WGD R Companion Library (WGDR) Function\n\n################\n# WGD.plotsample\n################\n# Plots genome-wide dosage for a single sample in a WGD matrix.\n# Writes as pdf to OUTDIR\n# Note: uses many undocumented helper plot functions, see\n# package contents for function details.\n################\n\nWGD.sample.plot <- function(mat,            #matrix object from which to plot. Must be read with WGD.readmatrix\n                            ID,             #ID of sample to plot. Must match column header in mat\n                            OUTDIR,         #output directory for plot\n                            filename=NULL,  #add custom filename for output\n                            sampling=25     #sampling & smoothing rate ([1,100], 1 = least, 100 = most)\n){\n  #Validate sampling parameter\n  if(is.numeric(sampling)==F | sampling<1 | sampling>100){\n    stop(paste(\"WGDR::ERROR [\",\n               strsplit(as.character(Sys.time()),split=\" \")[[1]][2],\n               \"] \",match.call()[[1]],\" parameter 'sampling' must be integer ~ [1,100]\",sep=\"\"))\n  }\n\n  #Ensure output directory exists\n  if(dir.exists(OUTDIR)==F){\n    cat(paste(\"WGDR::WARNING [\",\n              strsplit(as.character(Sys.time()),split=\" \")[[1]][2],\n              \"] \",match.call()[[1]],\" specified output directory (\",\n              OUTDIR,\") does not exist. Attempting to create...\\n\",\n              sep=\"\"))\n    dir.create(OUTDIR,recursive=T)\n  }\n\n  #Disable scientific notation\n  options(scipen=1000)\n\n  #Gather identity and order of contigs\n  contigs <- unique(mat$mat$chr)\n\n  #Prepare layout\n  if(!is.null(filename)){\n    outname <- paste(OUTDIR,filename,sep=\"\")\n  }else{\n    outname <- paste(OUTDIR,ID,\".WGD_report.pdf\",sep=\"\")\n  }\n  pdf(outname,\n      height=10,width=8,\n      title=paste(\"WGD_REPORT_\",ID,sep=\"\"))\n  par(oma=c(0.25,0.25,0.25,0.25))\n  layout(matrix(c(1,1,1,1,\n                  2,3,4,5,\n                  6,7,8,9,\n                  10,11,12,13,\n                  14,15,16,17,\n                  18,19,20,21,\n                  22,23,25,25,\n                  24,24,25,25),\n                byrow=T,ncol=4))\n\n  #Plot genome-wide strip at top\n  WGD.sample.gstrip(mat,ID,sampling=1)\n\n  #Plot first 22 contigs\n  if(length(contigs)>=22){\n    for(contig in contigs[1:22]){\n      WGD.sample.contig(mat,ID,contig,sampling)\n    }\n  }else{\n    for(contig in contigs){\n      WGD.sample.contig(mat,ID,contig,sampling)\n    }\n    for(i in c((22-length(contigs)):22)){\n      par(bty=\"n\")\n      plot(0,0,type=\"n\",\n           xaxt=\"n\",yaxt=\"n\",xlab=\"\",ylab=\"\")\n    }\n    par(bty=\"o\")\n  }\n\n  #Summary plots\n  WGD.sample.summaryplots(mat,ID)\n\n  #Close output\n  dev.off()\n}\n\n",
+    "created" : 1461886066371.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3704270469",
+    "id" : "7BFC0EA5",
+    "lastKnownWriteTime" : 1461900223,
+    "last_content_update" : 1461900223476,
+    "path" : "~/Desktop/RCollins/Talkowski_Local/code/WGD/WGDR/R/WGD.sample.plot.R",
+    "project_path" : "R/WGD.sample.plot.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 4,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}

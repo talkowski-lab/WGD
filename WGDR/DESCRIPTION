@@ -1,0 +1,13 @@
+Package: WGDR
+Type: Package
+Title: R Companion Library for WGD Software Suite
+Version: 0.1.0
+Author: Ryan L. Collins
+Maintainer: Ryan L. Collins <rlcollins@g.harvard.edu>
+Description: Provides a library of functions for manipulating,
+    analyzing, visualizing, and annotating WGD output matrices
+    and other data structures
+License: MIT License
+LazyData: TRUE
+Imports:
+    grDevices

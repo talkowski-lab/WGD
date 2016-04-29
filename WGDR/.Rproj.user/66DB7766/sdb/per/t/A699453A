@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# Copyright (c) 2016 Ryan L. Collins <rlcollins@g.harvard.edu>\n# Distributed under terms of the MIT license.\n\n# WGD R Companion Library (WGDR) Function\n\n################\n# WGD.sample.summaryplots\n################\n# Plots a boxplot of bins per contig and a distribution of all\n# normalized coverage genome-wide\n# Note: undocumented; designed for direct integration into WGD.plotsample\n# See WGD.plotsample documentation for relevant info\n################\n\nWGD.sample.summaryplots <- function(mat,  #matrix object from which to plot. Must be read with WGD.readmatrix\n                                    ID    #ID of sample to plot. Must match column header in mat\n){\n  #Disable scientific notation\n  options(scipen=1000)\n\n  #Libraries\n  require(grDevices)\n\n  #Set color palette\n  colGen <- colorRampPalette(c(\"red\",\"white\",\"blue\"))(100)\n\n  #Gather identity and order of contigs\n  contigs <- unique(mat$mat$chr)\n\n  #Get sample values\n  vals <- mat$mat[,which(names(mat$mat)==ID)]\n\n  #Boxplot per contig\n  par(mar=c(3.1,4.1,0.6,0.1))\n  boxplot(vals ~ as.factor(mat$mat$chr),\n          col=c(\"powderblue\",\"gold\"),outline=F,ylim=c(0,2),lty=1,\n          xaxs=\"i\",yaxs=\"i\",yaxt=\"n\",xaxt=\"n\",\n          ylab=\"Norm. Cov. Dev.\")\n  abline(h=c(0.5,1.5),\n         lty=2,\n         col=c(\"red\",\"blue\"))\n  axis(2,at=seq(0,2,by=0.25),\n       labels=c(\"-100%\",\"\",\"-50%\",\"\",\"0%\",\n                \"\",\"+50%\",\"\",\"+100%\"),\n       las=2,cex.axis=0.8)\n  text(x=seq(1:length(contigs)),\n       y=par(\"usr\")[3],\n       cex=0.8,pos=3,\n       labels=contigs,\n       font=2)\n\n  #Histogram of all bins in genome\n  par(mar=c(4.1,4.1,2.1,1.1))\n  hdat <- hist(vals,\n               breaks=seq(round(min(vals)-0.49,0),round(max(vals)+1,0),by=0.025),\n               plot=F)\n  histColVals <- 2*(round(50*hdat$mids)-50)+50\n  histColVals[which(histColVals<1)] <- 1\n  histColVals[which(histColVals>100)] <- 100\n  plot(x=c(0,2),y=c(0,1.05*max(hdat$counts)),\n       type=\"n\",\n       main=\"Genomic Distribution of Norm. Cov. Deviance\",\n       xlab=\"Norm. Cov. Deviance\",xaxs=\"i\",xaxt=\"n\",\n       ylab=\"Bins (Count)\",yaxs=\"i\",yaxt=\"n\")\n  abline(v=seq(0.25,1.75,by=0.25),\n         lty=2,col=c(rep(\"red\",3),\"white\",\n                     rep(\"blue\",3)))\n  rect(xleft=hdat$breaks[1:(length(hdat$breaks)-1)],\n       xright=hdat$breaks[2:length(hdat$breaks)],\n       ybottom=0,\n       ytop=hdat$counts,\n       col=colGen[histColVals])\n  abline(v=1,lwd=3)\n  axis(1,at=seq(0,2,by=0.25),\n       labels=c(\"-100%\",\"\",\"-50%\",\"\",\"0%\",\n                \"\",\"+50%\",\"\",\"+100%\"),\n       cex.axis=0.9)\n  axis(2,at=seq(0,par(\"usr\")[4],\n                by=round(par(\"usr\")[4]/6,-2)),\n       labels=prettyNum(seq(0,par(\"usr\")[4],\n                            by=round(par(\"usr\")[4]/6,-2)),\n                        big.mark=\",\"),\n       las=2,cex=0.8)\n}\n",
+    "created" : 1461899224915.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2141495656",
+    "id" : "A699453A",
+    "lastKnownWriteTime" : 1461902349,
+    "last_content_update" : 1461902349197,
+    "path" : "~/Desktop/RCollins/Talkowski_Local/code/WGD/WGDR/R/WGD.sample.summaryplots.R",
+    "project_path" : "R/WGD.sample.summaryplots.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 4,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}

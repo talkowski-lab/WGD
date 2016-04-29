@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# Copyright (c) 2016 Ryan L. Collins <rlcollins@g.harvard.edu>\n# Distributed under terms of the MIT license.\n\n# WGD R Companion Library (WGDR) Function\n\n################\n# WGD.sample.gstrip\n################\n# Plots genome-wide summary strip of dosage for a single sample in a WGD matrix.\n# Note: undocumented; designed for direct integration into WGD.plotsample\n# See WGD.plotsample documentation for relevant info\n################\n\nWGD.sample.gstrip <- function(mat,        #matrix object from which to plot. Must be read with WGD.readmatrix\n                             ID,          #ID of sample to plot. Must match column header in mat\n                             sampling=1  #sampling & smoothing rate ([1,100], 1 = least, 100 = most)\n){\n  #Disable scientific notation\n  options(scipen=1000)\n\n  #Libraries\n  require(grDevices)\n\n  #Get plotting values\n  vals <- mat$mat[seq(1,nrow(mat$mat),by=sampling),\n                  which(names(mat$mat)==ID)]\n  binsize <- median(mat$mat[,3]-mat$mat[,2])\n\n  #Get chromosome breaks\n  chrbreaks <- as.data.frame(t(sapply(unique(mat$mat$chr),\n                                      function(contig){\n                                        minBin <- min(which(mat$mat$chr==contig))\n                                        maxBin <- max(which(mat$mat$chr==contig))\n                                        return(c(contig,minBin,maxBin))\n                                      })))\n  names(chrbreaks) <- c(\"chr\",\"min\",\"max\")\n\n  #Set color palette\n  colGen <- colorRampPalette(c(\"red\",\"white\",\"blue\"))(100)\n  cvals <- round((vals*100)-50,0)\n  cvals[which(cvals<1)] <- 1\n  cvals[which(cvals>100)] <- 100\n\n  #Plot parameters\n  par(mar=c(0.6,4.1,1.6,0.1))\n\n  #Plot\n  plot(vals,\n       pch=15,col=colGen[cvals],\n       xaxt=\"n\",yaxt=\"n\",xlab=\"\",yaxs=\"i\",xaxs=\"i\",\n       ylim=c(0,2),\n       main=paste(\"WGD Report: Sample \",ID,sep=\"\"),\n       ylab=\"Norm. Cov. Deviance\",\n       cex.lab=0.9,cex=0.8,\n       panel.first=c(rect(xleft=par(\"usr\")[1],\n                          xright=par(\"usr\")[2],\n                          ybottom=par(\"usr\")[3],\n                          ytop=par(\"usr\")[4],\n                          border=NA,col=\"gray97\"),\n                     rect(xleft=par(\"usr\")[1],\n                          xright=par(\"usr\")[2],\n                          ybottom=0.25,\n                          ytop=1.75,\n                          border=NA,col=\"gray90\"),\n                     rect(xleft=par(\"usr\")[1],\n                          xright=par(\"usr\")[2],\n                          ybottom=0.5,\n                          ytop=1.5,\n                          border=NA,col=\"gray80\"),\n                     rect(xleft=par(\"usr\")[1],\n                          xright=par(\"usr\")[2],\n                          ybottom=0.75,\n                          ytop=1.25,\n                          border=NA,col=\"gray60\")))\n  abline(h=c(1,0.75,1.25,0.5,1.5,0.25,1.75),\n         lty=c(1,rep(2,6)),\n         lwd=c(2,rep(1,6)),\n         col=c(\"gray10\",rep(\"gray30\",6)))\n  abline(v=chrbreaks[,3])\n  axis(2,at=seq(0,2,by=0.25),\n       labels=c(\"-100%\",\"\",\"-50%\",\"\",\"0%\",\n                \"\",\"+50%\",\"\",\"+100%\"),\n       las=2,cex.axis=0.8)\n  text(x=(chrbreaks[,3]+chrbreaks[,2])/2,\n       y=par(\"usr\")[3],pos=3,\n       labels=chrbreaks[,1],\n       font=2,cex=0.7)\n  mtext(text=paste(prettyNum(binsize,big.mark=\",\"),\" bp Bins\",sep=\"\"),\n        adj=1,cex=0.6,font=3)\n}\n",
+    "created" : 1461899519622.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3654410857",
+    "id" : "21F8F2DD",
+    "lastKnownWriteTime" : 1461900339,
+    "last_content_update" : 1461900339002,
+    "path" : "~/Desktop/RCollins/Talkowski_Local/code/WGD/WGDR/R/WGD.sample.gstrip.R",
+    "project_path" : "R/WGD.sample.gstrip.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 5,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}

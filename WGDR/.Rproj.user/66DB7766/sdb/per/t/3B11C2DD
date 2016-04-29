@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# Copyright (c) 2016 Ryan L. Collins <rlcollins@g.harvard.edu>\n# Distributed under terms of the MIT license.\n\n# WGD R Companion Library (WGDR) Function\n\n################\n# WGD.sample.plotcontig\n################\n# Plots smoothed dosage for a specified contig from a single sample\n# in a WGD matrix. Plot is backlaid with summary stats of cohort for\n# interpretability.\n# Note: undocumented; designed for direct integration into WGD.plotsample\n# See WGD.plotsample documentation for relevant info\n################\n\nWGD.sample.contig <- function(mat,        #matrix object from which to plot. Must be read with WGD.readmatrix\n                              ID,         #ID of sample to plot. Must match column header in mat\n                              contig,     #contig to plot\n                              sampling=25 #sampling & smoothing rate ([1,100], 1 = least, 100 = most)\n){\n  #Disable scientific notation\n  options(scipen=1000)\n\n  #Libraries\n  require(grDevices)\n\n  #Get plotting values\n  vals <- lowess(mat$mat[which(mat$mat$chr==contig),\n                         which(names(mat$mat)==ID)],\n                 f=0.1*(sampling/100))\n\n  #Get IQR values\n  lowest <- lowess(mat$stat$min[which(mat$mat$chr==contig)],\n                   f=0.1*(sampling/100))\n  lower <- lowess(mat$stat$Q1[which(mat$mat$chr==contig)],\n                  f=0.1*(sampling/100))\n  med <- lowess(mat$stat$med[which(mat$mat$chr==contig)],\n                  f=0.1*(sampling/100))\n  upper <- lowess(mat$stat$Q3[which(mat$mat$chr==contig)],\n                  f=0.1*(sampling/100))\n  highest <- lowess(mat$stat$max[which(mat$mat$chr==contig)],\n                   f=0.1*(sampling/100))\n\n  #Set color palette\n  colGen <- colorRampPalette(c(\"red\",\"white\",\"blue\"))(100)\n  cvals <- (2*round((vals$y*100)-100,0))+50\n  cvals[which(cvals<1)] <- 1\n  cvals[which(cvals>100)] <- 100\n\n  #Plot parameters\n  par(mar=c(1.1,4.1,2.1,0.1))\n\n  #Plot\n  plot(x=range(vals$x),y=c(0.5,1.5),\n       type=\"n\",\n       main=contig,\n       ylab=\"Norm. Cov. Deviance\",\n       xaxt=\"n\",yaxt=\"n\",xlab=\"\",xaxs=\"i\",yaxs=\"i\",\n       panel.first=c(rect(xleft=par(\"usr\")[1],\n                          xright=par(\"usr\")[2],\n                          ybottom=par(\"usr\")[3],\n                          ytop=par(\"usr\")[4],\n                          border=NA,col=\"gray95\")))\n  polygon(x=c(lower$x,rev(upper$x)),\n          y=c(med$y-(2*(med$y-lower$y)),\n              rev(med$y+(2*(upper$y-med$y)))),\n          border=\"navajowhite3\",col=\"moccasin\")\n  polygon(x=c(lower$x,rev(upper$x)),\n          y=c(lower$y,rev(upper$y)),\n          border=\"navajowhite3\",col=\"navajowhite2\")\n  points(med,type=\"l\",col=\"white\")\n  points(vals,type=\"l\",lwd=3)\n  abline(h=c(0.75,1,1.25),\n         lty=c(2,1,2),lwd=c(1,2,1),\n         col=c(\"gray30\",\"black\",\"gray30\"))\n  segments(x0=vals$x[1:(length(vals$x)-1)],\n           x1=vals$x[2:length(vals$x)],\n           y0=vals$y[1:(length(vals$y)-1)],\n           y1=vals$y[2:length(vals$y)],\n           col=colGen[cvals],lwd=1)\n  points(vals$x[seq(1,length(vals$x),by=sampling)],\n         vals$y[seq(1,length(vals$x),by=sampling)],\n         pch=19,cex=0.8,\n         col=colGen[cvals[seq(1,length(vals$x),by=sampling)]])\n  points(vals$x[seq(1,length(vals$x),by=sampling)],\n         vals$y[seq(1,length(vals$x),by=sampling)],\n         pch=21,cex=0.8)\n  axis(2,at=seq(0.5,1.5,by=0.25),\n       labels=c(\"-50%\",\"-25%\",\"0%\",\"+25%\",\"+50%\"),\n       las=2,cex.axis=0.9)\n}\n",
+    "created" : 1461892500463.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1187900479",
+    "id" : "3B11C2DD",
+    "lastKnownWriteTime" : 1461898925,
+    "last_content_update" : 1461898925129,
+    "path" : "~/Desktop/RCollins/Talkowski_Local/code/WGD/WGDR/R/WGD.sample.contig.R",
+    "project_path" : "R/WGD.sample.contig.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 1,
+    "source_on_save" : true,
+    "source_window" : "",
+    "type" : "r_source"
+}
