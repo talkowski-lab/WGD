@@ -14,6 +14,7 @@
 #  $res : matrix of residuals
 #  $stat : matrix of per-bin distribution statistics
 #  $rstat : matrix of per-bin residual distribution statistics
+#  $sstat : matrix of per-sample residual distribution statistics
 ################
 
 WGD.matrix.merge <- function(matrices,    #list of matrices imported with WGD.readmatrix
@@ -58,6 +59,6 @@ WGD.matrix.merge <- function(matrices,    #list of matrices imported with WGD.re
   }
 
   #Process new merged matrix & return
-  return(WGD.processMatrix(mat))
+  return(WGD.matrix.postprocess(mat))
 
 }

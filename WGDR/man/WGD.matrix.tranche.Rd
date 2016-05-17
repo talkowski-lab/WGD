@@ -30,6 +30,7 @@ WGD.matrix.tranche(mat, tranche = 0.995, quiet = F)
 \item{res}{Matrix of coverage residuals}
 \item{stat}{Binwise summary statistics for coverage matrix}
 \item{rstat}{Binwise summary statistics for coverage residuals}
+\item{rstat}{Per-sample summary statistics for coverage residuals}
 }
 \seealso{
 \url{https://github.com/RCollins13/WGD}

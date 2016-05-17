@@ -14,6 +14,7 @@
 #  $res : matrix of residuals
 #  $stat : matrix of per-bin distribution statistics
 #  $rstat : matrix of per-bin residual distribution statistics
+#  $sstat : matrix of per-sample residual distribution statistics
 ################
 
 WGD.matrix.read <- function(path,        #full path to matrix file

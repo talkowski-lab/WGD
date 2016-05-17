@@ -13,6 +13,7 @@
 #  $res : matrix of residuals
 #  $stat : matrix of per-bin distribution statistics
 #  $rstat : matrix of per-bin residual distribution statistics
+#  $sstat : matrix of per-sample residual distribution statistics
 ################
 
 WGD.matrix.tranche <- function(mat,            #matrix object from which to plot. Must be read with WGD.readmatrix
@@ -43,11 +44,8 @@ WGD.matrix.tranche <- function(mat,            #matrix object from which to plot
   #Filters bins
   pass <- which(mat$stat$Q1>Q1.min
                 & mat$stat$Q3<Q3.max)
-  mat$mat <- mat$mat[pass,]
-  mat$res <- mat$res[pass,]
-  mat$stat <- mat$stat[pass,]
-  mat$rstat <- mat$rstat[pass,]
+  nmat <- WGD.matrix.postprocess(mat$mat[pass,])
 
   #Returns filtered matrix
-  return(mat)
+  return(nmat)
 }

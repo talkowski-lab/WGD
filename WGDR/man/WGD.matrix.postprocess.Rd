@@ -24,6 +24,7 @@ WGD.matrix.postprocess(mat, allosomes = F)
 \item{res}{Matrix of coverage residuals}
 \item{stat}{Binwise summary statistics for coverage matrix}
 \item{rstat}{Binwise summary statistics for coverage residuals}
+\item{sstat}{Per-sample summary statistics for coverage residuals}
 }
 \seealso{
 \url{https://github.com/RCollins13/WGD}

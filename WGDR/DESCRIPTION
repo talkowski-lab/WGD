@@ -10,4 +10,5 @@ Description: Provides a library of functions for manipulating,
 License: MIT License
 LazyData: TRUE
 Imports:
-    grDevices
+    grDevices,
+    moments
