@@ -18,6 +18,11 @@ WGD.matrix.postprocess(mat, allosomes = F)
   \item{allosomes}{
   Option to include non-numeric contigs, such as chrX and chrY.
 }
+  \item{norm}{
+  Option to normalize raw coverage values per sample per contig.
+  Only needs to be specified if passing raw binCov outputs rather than
+  normalized binCov outputs.
+}
 }
 \value{
 \item{mat}{Merged coverage matrix}

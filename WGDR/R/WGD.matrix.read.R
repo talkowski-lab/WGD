@@ -19,6 +19,7 @@
 
 WGD.matrix.read <- function(path,        #full path to matrix file
                            allosomes=F,  #option to auto-exclude non-numeric contigs
+                           norm=F,       #option to normalize coverage matrix; only necessary if using raw binCov matrix
                            quiet=F       #option to disable verbose output
 ){
   #Prohibit scientific notation & auto string factorization
@@ -36,5 +37,7 @@ WGD.matrix.read <- function(path,        #full path to matrix file
   mat <- read.table(path,header=T)
 
   #Process matrix
-  return(WGD.matrix.postprocess(mat))
+  return(WGD.matrix.postprocess(mat,
+                                norm=norm,
+                                allosomes=allosomes))
 }

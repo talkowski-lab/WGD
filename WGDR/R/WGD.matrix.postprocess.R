@@ -17,7 +17,8 @@
 ################
 
 WGD.matrix.postprocess <- function(mat,         #matrix object from which to plot. Must be x$mat object from WGD.readmatrix
-                                   allosomes=F  #option to auto-exclude non-numeric contigs
+                                   allosomes=F, #option to auto-exclude non-numeric contigs
+                                   norm=F       #option to normalize coverage matrix; only necessary if using raw binCov matrix
 ){
   #Ensure library dependencies load
   require(moments)
@@ -28,7 +29,27 @@ WGD.matrix.postprocess <- function(mat,         #matrix object from which to plo
     mat <- mat[which(!(is.na(mat$chr))),]
   }
 
+  #Normalize matrix (if optioned)
+  if(norm==T){
+    if(quiet==F){
+      cat(paste("WGDR::STATUS [",
+                strsplit(as.character(Sys.time()),split=" ")[[1]][2],
+                "]: normalizing raw coverage data\n",sep=""))
+    }
+    contigs <- unique(as.character(mat[,1]))
+    for(s in 4:ncol(mat)){
+      for(contig in contigs){
+        mat[which(mat[,1]==contig),s] <- mat[which(mat[,1]==contig),s]/median(mat[which(mat[,1]==contig & mat[,s]>0),s])
+      }
+    }
+  }
+
   #Generate matrix residuals
+  if(quiet==F){
+    cat(paste("WGDR::STATUS [",
+              strsplit(as.character(Sys.time()),split=" ")[[1]][2],
+              "]: calculating coverage matrix statistics\n",sep=""))
+  }
   mat.res <- cbind(mat[1:3],
                    mat[-c(1:3)]-1)
 

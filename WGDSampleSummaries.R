@@ -31,6 +31,8 @@ option_list <- list(
               metavar="character"),
   make_option(c("-t","--tranche"), action="store_false", default=TRUE,
               help="exclude most extreme 0.5% of bins genome-wide [default %default]"),
+  make_option(c("-n","--normalize"), action="store_true", default=FALSE,
+              help="normalize raw coverage values; only necessary when passing raw binCov matrix of counts [default %default]"),
   make_option(c("-q","--quiet"), action="store_true", default=FALSE,
               help="disable verbose output [default %default]")
 )
@@ -86,7 +88,8 @@ if(is.null(opts$samples)==T){
 }
 
 #Reads matrix
-mat <- WGD.matrix.read(args$args[1])
+mat <- WGD.matrix.read(args$args[1],
+                       norm=opts$normalize)
 
 #Tranches matrix (if optioned)
 if(opts$tranche==T){
