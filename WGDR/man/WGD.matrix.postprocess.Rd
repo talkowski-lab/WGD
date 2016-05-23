@@ -23,6 +23,9 @@ WGD.matrix.postprocess(mat, allosomes = F)
   Only needs to be specified if passing raw binCov outputs rather than
   normalized binCov outputs.
 }
+  \item{quiet}{
+  Disable verbose output.
+}
 }
 \value{
 \item{mat}{Merged coverage matrix}

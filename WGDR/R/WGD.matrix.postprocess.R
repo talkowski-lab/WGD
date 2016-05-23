@@ -18,7 +18,8 @@
 
 WGD.matrix.postprocess <- function(mat,         #matrix object from which to plot. Must be x$mat object from WGD.readmatrix
                                    allosomes=F, #option to auto-exclude non-numeric contigs
-                                   norm=F       #option to normalize coverage matrix; only necessary if using raw binCov matrix
+                                   norm=F,      #option to normalize coverage matrix; only necessary if using raw binCov matrix
+                                   quiet=F      #option to disable verbose output
 ){
   #Ensure library dependencies load
   require(moments)
