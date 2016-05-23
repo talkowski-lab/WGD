@@ -26,7 +26,7 @@ WGD.sample.plot <- function(mat,            #matrix object from which to plot. M
   }
 
   #Ensure output directory exists
-  if(dir.exists(OUTDIR)==F){
+  if(file.exists(OUTDIR)==F){
     cat(paste("WGDR::WARNING [",
               strsplit(as.character(Sys.time()),split=" ")[[1]][2],
               "] ",match.call()[[1]]," specified output directory (",
