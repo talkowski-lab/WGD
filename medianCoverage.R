@@ -6,6 +6,10 @@
 # Script to calculate median bin coverage per sample for all samples in a bincov
 # matrix
 
+# Note: loads entire coverage matrix into memory. This may pose a problem for
+# large matrices or on small-memory machines. Other workarounds exist from the
+# command line, but most are slower.
+
 # Load library
 library(optparse)
 
