@@ -1,4 +1,4 @@
-#!/usr/bin/env R
+#!/usr/bin/env Rscript
 
 # Copyright (c) 2016 Ryan Collins <rcollins@chgr.mgh.harvard.edu>
 # Distributed under terms of the MIT license.
@@ -32,4 +32,4 @@ withoutzeros <- apply(cov[-zerobins,-c(1:3)],2,median)
 res <- data.frame("#ID"=names(cov[,-c(1:3)]),
 	              "Med_withZeros"=withzeros,
 	              "Med_withoutZeros"=withoutzeros)
-write.table(res,OUTFILE,)
+write.table(res,OUTFILE,sep="\t",col.names=T,row.names=F,quote=F)
