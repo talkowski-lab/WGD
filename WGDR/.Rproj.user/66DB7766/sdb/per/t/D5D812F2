@@ -7,14 +7,14 @@
     "folds" : "",
     "hash" : "3989477827",
     "id" : "D5D812F2",
-    "lastKnownWriteTime" : 1461903512,
-    "last_content_update" : 1461903512881,
+    "lastKnownWriteTime" : 1464115727,
+    "last_content_update" : 1464115727070,
     "path" : "~/Desktop/RCollins/Talkowski_Local/NGS/WGS_Dosage_Anomalies/WGDR_development/WGDR_devCode.R",
     "project_path" : null,
     "properties" : {
         "tempName" : "Untitled2"
     },
-    "relative_order" : 3,
+    "relative_order" : 1,
     "source_on_save" : false,
     "source_window" : "",
     "type" : "r_source"
