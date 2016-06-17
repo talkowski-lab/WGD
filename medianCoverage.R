@@ -26,6 +26,11 @@ if(length(args$args) != 2)
 # Read matrix
 cov <- read.table(args$args[1], header=T)
 
+#Downsample to 1M random rows if nrows > 1M (for computational efficiency)
+if(nrow(cov)>1000000){
+	cov <- cov[sample(1:nrow(cov), 1000000),]
+}
+
 # Get medians with and without zero-cov bins
 zerobins <- which(apply(cov, 1, median) == 0)
 withzeros <- apply(cov[,-c(1:3)], 2, median)
