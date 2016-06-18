@@ -32,8 +32,8 @@ if(nrow(cov)>1000000){
 }
 
 # Get medians with and without zero-cov bins
-zerobins <- which(apply(cov, 1, median) == 0)
-withzeros <- apply(cov[,-c(1:3)], 2, median)
+zerobins <- which(apply(cov, 1, median, na.rm=T) == 0)
+withzeros <- apply(cov[,-c(1:3)], 2, median, na.rm=T)
 withoutzeros <- apply(cov[-zerobins,-c(1:3)], 2, median)
 
 # write out results
