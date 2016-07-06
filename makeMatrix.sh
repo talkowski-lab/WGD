@@ -52,4 +52,4 @@ fi
   -header \
   -names $( while read ID cov; do echo "${ID}"; done < ${SAMPLES} | paste -s -d\  )\
   -i $( while read ID cov; do echo "${cov}"; done < ${SAMPLES} | paste -s -d\  )|\
-  sed 's/chrom/chr/g' > ${OUTFILE}
+  sed -e 's/chrom/Chr/g' -e 's/start/Start/g' -e 's/end/End/g' > ${OUTFILE}
