@@ -207,4 +207,5 @@ Optional arguments:
   -b/--binwise  Compute medians of all samples per bin [default: median of all bins per sample]
 ```  
 **Usage Notes:**  
+- NOTE: Automatically downsamples to 1M bins (in per-sample mode) or 500 samples (in per-bin mode) to increase computational efficiency. Will add an option at a later date to disable downsampling.
 - DEV NOTE: will be extended to calcuate other measurements, such as standard deviation, mean, median absolute deviation, quartiles, and min/max
