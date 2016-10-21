@@ -23,7 +23,6 @@ option_list <- list(
 args <- parse_args(OptionParser(usage="%prog [options] covMatrix.bed OUTFILE", 
                                 option_list=option_list),
                    positional_arguments=TRUE)
-args <- parse_args(parser,positional_arguments=TRUE)
 opts <- args$options
 
 # Checks for appropriate positional arguments
