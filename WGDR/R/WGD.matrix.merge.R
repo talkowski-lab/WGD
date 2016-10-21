@@ -17,10 +17,10 @@
 #  $sstat : matrix of per-sample residual distribution statistics
 ################
 
-WGD.matrix.merge <- function(matrices,    #list of matrices imported with WGD.readmatrix
-                            innerjoin=T, #option to only retains bins that appear in all matrices
-                            allosomes=F, #option to auto-exclude non-numeric contigs
-                            quiet=F      #option to disable verbose output
+WGD.matrix.merge <- function(matrices,     #list of matrices imported with WGD.readmatrix
+                             innerjoin=T,  #option to only retains bins that appear in all matrices
+                             allosomes=F,  #option to auto-exclude non-numeric contigs
+                             quiet=F       #option to disable verbose output
 ){
   #Prohibit scientific notation & auto string factorization
   options(scipen=1000,

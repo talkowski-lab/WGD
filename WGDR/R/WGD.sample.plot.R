@@ -16,7 +16,7 @@ WGD.sample.plot <- function(mat,            #matrix object from which to plot. M
                             ID,             #ID of sample to plot. Must match column header in mat
                             OUTDIR,         #output directory for plot
                             filename=NULL,  #add custom filename for output
-                            sampling=25     #sampling & smoothing rate ([1,100], 1 = least, 100 = most)
+                            sampling=35     #sampling & smoothing rate ([1,100], 1 = least, 100 = most)
 ){
   #Validate sampling parameter
   if(is.numeric(sampling)==F | sampling<1 | sampling>100){
@@ -45,10 +45,10 @@ WGD.sample.plot <- function(mat,            #matrix object from which to plot. M
   if(!is.null(filename)){
     outname <- paste(OUTDIR,filename,sep="")
   }else{
-    outname <- paste(OUTDIR,ID,".WGD_report.pdf",sep="")
+    outname <- paste(OUTDIR,ID,".WGD_report.jpg",sep="")
   }
-  pdf(outname,
-      height=10,width=8,
+  jpeg(outname,
+      height=300*11*0.8,width=300*8.5*0.8,quality=100,res=300,
       title=paste("WGD_REPORT_",ID,sep=""))
   par(oma=c(0.25,0.25,0.25,0.25))
   layout(matrix(c(1,1,1,1,

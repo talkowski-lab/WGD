@@ -8,16 +8,19 @@
 ################
 # Subsets WGD matrix to retain middle X% of bins
 ################
-# Returns a four-item list:
+# Returns an eight-item list:
 #  $mat : matrix of original values
 #  $res : matrix of residuals
+#  $log2 : matrix of log2-fold changes
 #  $stat : matrix of per-bin distribution statistics
 #  $rstat : matrix of per-bin residual distribution statistics
-#  $sstat : matrix of per-sample residual distribution statistics
+#  $lstat : matrix of per-bin log2-fold change distribution statistics
+#  $sstat.res : matrix of per-sample residual distribution statistics
+#  $sstat.log2 : matrix of per-sample residual distribution statistics
 ################
 
-WGD.matrix.tranche <- function(mat,            #matrix object from which to plot. Must be read with WGD.readmatrix
-                               tranche=0.995,  #fraction of bins to keep
+WGD.matrix.tranche <- function(mat,            #matrix object from which to read. Must be read with WGD.readmatrix
+                               tranche=0.99,   #fraction of bins to keep
                                quiet=F         #option to disable verbose output
 ){
   #Sanity check tranche parameter

@@ -8,12 +8,15 @@
 ################
 # Subfunction to perform summary statistic collection on a WGD matrix
 ################
-# Returns a four-item list:
+# Returns an eight-item list:
 #  $mat : matrix of original values
 #  $res : matrix of residuals
+#  $log2 : matrix of log2-fold changes
 #  $stat : matrix of per-bin distribution statistics
 #  $rstat : matrix of per-bin residual distribution statistics
-#  $sstat : matrix of per-sample residual distribution statistics
+#  $lstat : matrix of per-bin log2-fold change distribution statistics
+#  $sstat.res : matrix of per-sample residual distribution statistics
+#  $sstat.log2 : matrix of per-sample residual distribution statistics
 ################
 
 WGD.matrix.postprocess <- function(mat,         #matrix object from which to plot. Must be x$mat object from WGD.readmatrix
@@ -51,23 +54,41 @@ WGD.matrix.postprocess <- function(mat,         #matrix object from which to plo
               strsplit(as.character(Sys.time()),split=" ")[[1]][2],
               "]: calculating coverage matrix statistics\n",sep=""))
   }
-  mat.res <- cbind(mat[1:3],
-                   mat[-c(1:3)]-1)
+  mat.res <- cbind(mat[,1:3],
+                   mat[,-c(1:3)]-1)
+
+  #Generate matrix of log2-fold changes
+  mat.log2 <- cbind(mat[1:3],
+                   log2(mat[-c(1:3)]))
 
   #Gather summary stats per bin
   mat.stats <- cbind(mat[1:3],
                      t(apply(mat[,-c(1:3)],1,function(vals){
-                       return(summary(as.numeric(as.character(unlist(vals)))))
+                       return(c(summary(as.numeric(as.character(unlist(vals)))),
+                                IQR(vals,na.rm=T),
+                                quantile(vals,0.975,na.rm=T)-quantile(vals,0.025,na.rm=T),
+                                range(vals,na.rm=T)[2]-range(vals,na.rm=T)[1]))
                      })))
   mat.res.stats <- cbind(mat.res[1:3],
                          t(apply(mat.res[,-c(1:3)],1,function(vals){
-                           return(summary(as.numeric(as.character(unlist(vals)))))
+                           return(c(summary(as.numeric(as.character(unlist(vals)))),
+                                    IQR(vals,na.rm=T),
+                                    quantile(vals,0.975,na.rm=T)-quantile(vals,0.025,na.rm=T),
+                                    range(vals,na.rm=T)[2]-range(vals,na.rm=T)[1]))
                          })))
-  names(mat.stats) <- c(names(mat[1:3]),"min","Q1","med","mean","Q3","max")
-  names(mat.res.stats) <- c(names(mat[1:3]),"min","Q1","med","mean","Q3","max")
+  mat.log2.stats <- cbind(mat.log2[1:3],
+                         t(apply(mat.log2[,-c(1:3)],1,function(vals){
+                           return(c(summary(as.numeric(as.character(unlist(vals)))),
+                                    IQR(vals,na.rm=T),
+                                    quantile(vals,0.975,na.rm=T)-quantile(vals,0.025,na.rm=T),
+                                    range(vals,na.rm=T)[2]-range(vals,na.rm=T)[1]))
+                         })))
+  names(mat.stats) <- c(names(mat[1:3]),"min","Q1","med","mean","Q3","max","IQR","range95pct","range100pct")
+  names(mat.res.stats) <- c(names(mat[1:3]),"min","Q1","med","mean","Q3","max","IQR","range95pct","range100pct")
+  names(mat.log2.stats) <- c(names(mat[1:3]),"min","Q1","med","mean","Q3","max","IQR","range95pct","range100pct")
 
   #Gather summary stats per sample
-  mat.samp.stats <- as.data.frame(t(apply(mat.res[,-c(1:3)],2,function(vals){
+  mat.samp.stats.res <- as.data.frame(t(apply(mat.res[,-c(1:3)],2,function(vals){
     sumstat <- summary(vals)
     stdev <- sd(vals)
     medabs <- mad(vals)
@@ -75,12 +96,24 @@ WGD.matrix.postprocess <- function(mat,         #matrix object from which to plo
     kurt <- kurtosis(vals)
     return(c(sumstat,stdev,medabs,skew,kurt))
   })))
-  colnames(mat.samp.stats) <- c("min","Q1","med","mean","Q3","max","sd","mad","skewness","kurtosis")
+  colnames(mat.samp.stats.res) <- c("min","Q1","med","mean","Q3","max","sd","mad","skewness","kurtosis")
+  mat.samp.stats.log2 <- as.data.frame(t(apply(mat.log2[,-c(1:3)],2,function(vals){
+    sumstat <- summary(vals)
+    stdev <- sd(vals)
+    medabs <- mad(vals)
+    skew <- skewness(vals)
+    kurt <- kurtosis(vals)
+    return(c(sumstat,stdev,medabs,skew,kurt))
+  })))
+  colnames(mat.samp.stats.log2) <- c("min","Q1","med","mean","Q3","max","sd","mad","skewness","kurtosis")
 
   #Return data
   return(list("mat"=mat,
               "res"=mat.res,
+              "log2"=mat.log2,
               "stat"=mat.stats,
               "rstat"=mat.res.stats,
-              "sstat"=mat.samp.stats))
+              "lstat"=mat.log2.stats,
+              "sstat.res"=mat.samp.stats.res,
+              "sstat.log2"=mat.samp.stats.log2))
 }

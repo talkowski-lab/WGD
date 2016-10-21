@@ -9,8 +9,8 @@
 # Plots smoothed dosage for a specified contig from a single sample
 # in a WGD matrix. Plot is backlaid with summary stats of cohort for
 # interpretability.
-# Note: undocumented; designed for direct integration into WGD.plotsample
-# See WGD.plotsample documentation for relevant info
+# Note: undocumented; designed for direct integration into WGD.sample.plot
+# See WGD.sample.plot documentation for relevant info
 ################
 
 WGD.sample.contig <- function(mat,        #matrix object from which to plot. Must be read with WGD.readmatrix

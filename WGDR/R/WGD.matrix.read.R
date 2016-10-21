@@ -9,12 +9,15 @@
 # Helper function for standardized import of WGD normalized coverage
 # matrix and automated summary statistic collection.
 ################
-# Returns a four-item list:
+# Returns an eight-item list:
 #  $mat : matrix of original values
 #  $res : matrix of residuals
+#  $log2 : matrix of log2-fold changes
 #  $stat : matrix of per-bin distribution statistics
 #  $rstat : matrix of per-bin residual distribution statistics
-#  $sstat : matrix of per-sample residual distribution statistics
+#  $lstat : matrix of per-bin log2-fold change distribution statistics
+#  $sstat.res : matrix of per-sample residual distribution statistics
+#  $sstat.log2 : matrix of per-sample residual distribution statistics
 ################
 
 WGD.matrix.read <- function(path,        #full path to matrix file
