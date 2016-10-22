@@ -15,6 +15,8 @@ from subprocess import call
 import pysam
 import pybedtools
 import pandas as pd
+import gzip
+import shutil
 
 #Define exception class for invalid coverage modes
 class InvalidModeError(Exception):
@@ -144,6 +146,9 @@ def main():
                              '(default: nucleotide)')
     parser.add_argument('-x', '--blacklist', type=str, default=None,
                         help='BED file of regions to ignore')
+    parser.add_argument('-z', dest='gzip', default=False,
+                        action='store_true', help='Boolean flag to gzip output'
+                        ' bed files')
     parser.add_argument('-p', '--presubsetted', dest='presubbed',
                         action='store_true', help='Boolean flag to indicate'
                         ' if input bam is already subsetted to desired chr',
@@ -164,6 +169,12 @@ def main():
     coverage.saveas(args.cov_out)
     call('sort -Vk1,1 -k2,2n -o ' + args.cov_out + ' ' + args.cov_out,
          shell=True)
+    #Gzip if optioned
+    if args.gzip is True:
+        with open(args.cov_out, 'rb') as f_in, gzip.open(args.cov_out + '.gz', 
+            'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
+
 
     #Normalize coverage (if optioned) & write out
     if args.norm_out is not None:
@@ -173,6 +184,11 @@ def main():
         ncoverage.to_csv(args.norm_out, sep='\t', index=False, header=False)
         call(' '.join(['sort -Vk1,1 -k2,2n -o', args.norm_out, 
                         args.norm_out]), shell=True)
+    #Gzip if optioned
+    if args.gzip is True:
+        with open(args.norm_out, 'rb') as f_in, gzip.open(args.norm_out 
+            + '.gz', 'wb') as f_out:
+            shutil.copyfileobj(f_in, f_out)
 
 
 #Main block
