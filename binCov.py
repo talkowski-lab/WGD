@@ -17,6 +17,7 @@ import pybedtools
 import pandas as pd
 import gzip
 import shutil
+import os
 
 #Define exception class for invalid coverage modes
 class InvalidModeError(Exception):
@@ -174,6 +175,7 @@ def main():
         with open(args.cov_out, 'rb') as f_in, gzip.open(args.cov_out + '.gz', 
             'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
+    os.remove(cov_out)
 
 
     #Normalize coverage (if optioned) & write out
@@ -189,6 +191,7 @@ def main():
         with open(args.norm_out, 'rb') as f_in, gzip.open(args.norm_out 
             + '.gz', 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
+    os.remove(norm_out)
 
 
 #Main block
