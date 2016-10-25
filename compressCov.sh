@@ -55,7 +55,10 @@ while getopts ":o:zsh" opt; do
 done
 shift $(( ${OPTIND} - 1))
 INPUT=$1
-RATIO=$2
+RATIO=$
+
+#DEUBG
+echo $OUTFILE
 
 #Check for required input
 if [ -z ${INPUT} ] || [ -z ${RATIO} ] || ! [ -e ${SAMPLES} ]; then
