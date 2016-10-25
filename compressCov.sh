@@ -43,10 +43,6 @@ while getopts ":o:zsh" opt; do
       ;;
     z)
       GZ=1
-      #Scrub ".gz" from output filename if provided by user
-      if [ ${OUTFILE: -3} == ".gz" ]; then
-        OUTFILE=$( echo "${OUTFILE}" | sed 's/\.gz//g' )
-      fi
       ;;
     s)
       BEDOP="sum"
@@ -56,9 +52,6 @@ done
 shift $(( ${OPTIND} - 1))
 INPUT=$1
 RATIO=$
-
-#DEUBG
-echo $OUTFILE
 
 #Check for required input
 if [ -z ${INPUT} ] || [ -z ${RATIO} ] || ! [ -e ${SAMPLES} ]; then
@@ -72,6 +65,14 @@ if [ ${OUTFILE} == "/dev/stdout" ] && [ ${GZ} == 1 ]; then
   usage
   exit 0
 fi
+
+#Scrub ".gz" from output filename if provided by user
+if [ ${OUTFILE: -3} == ".gz" ]; then
+  OUTFILE=$( echo "${OUTFILE}" | sed 's/\.gz//g' )
+fi
+
+#DEUBG
+echo $OUTFILE
 
 #Unzip input file if gzipped
 GZI=0
