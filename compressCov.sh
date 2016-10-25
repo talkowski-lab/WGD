@@ -21,9 +21,9 @@ Positional arguments:
 
 Optional arguments:
   -h  HELP        Show this help message and exit
-  -o  OUTFILE     Output file (default: stdout)
   -z  GZIP        Gzip output file
   -s  SUM         Report sum (default: report median)
+  -o  OUTFILE     Output file (default: stdout)
 
 EOF
 }
@@ -108,7 +108,7 @@ done < <( fgrep -v "#" ${INPUT} | cut -f1 | sort | uniq ) > ${OUTFILE}
 
 #Gzip output if optioned
 if [ ${GZ} == 1 ]; then
-  gzip ${OUTFILE}
+  gzip --force ${OUTFILE}
 fi
 
 #Clean up
