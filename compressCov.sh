@@ -51,7 +51,7 @@ while getopts ":o:zsh" opt; do
 done
 shift $(( ${OPTIND} - 1))
 INPUT=$1
-RATIO=$
+RATIO=$2
 
 #Check for required input
 if [ -z ${INPUT} ] || [ -z ${RATIO} ] || ! [ -e ${SAMPLES} ]; then
@@ -70,10 +70,6 @@ fi
 if [ ${GZ} == 1 ] && [ ${OUTFILE: -3} == ".gz" ]; then
   OUTFILE=$( echo "${OUTFILE}" | sed 's/\.gz//g' )
 fi
-
-#DEUBG
-echo $OUTFILE
-echo $RATIO
 
 #Unzip input file if gzipped
 GZI=0
