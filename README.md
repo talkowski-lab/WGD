@@ -131,6 +131,7 @@ optional arguments:
                         nucleotide)
   -x BLACKLIST, --blacklist BLACKLIST
                         BED file of regions to ignore
+  -z                    Boolean flag to gzip output bed files
   -p, --presubsetted    Boolean flag to indicate if input bam is already
                         subsetted to desired chr
   -v OVERLAP, --overlap OVERLAP
