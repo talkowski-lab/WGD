@@ -16,6 +16,8 @@ All code copyright (c) 2016 Ryan Collins and is distributed under terms of the M
 - [binCov.py](https://github.com/RCollins13/WGD#bincovpy)  
 - [WG_binCov.sh](https://github.com/RCollins13/WGD#wg_bincovsh)  
 - [makeMatrix.sh](https://github.com/RCollins13/WGD#makematrixsh)  
+- [medianCoverage.R](https://github.com/RCollins13/WGD#mediancoverager)
+- [compressCov.sh](https://github.com/RCollins13/WGD#compresscovsh)  
 
 --- 
 
@@ -210,3 +212,27 @@ Optional arguments:
 **Usage Notes:**  
 - NOTE: Automatically downsamples to 1M bins (in per-sample mode) or 500 samples (in per-bin mode) to increase computational efficiency. Will add an option at a later date to disable downsampling.
 - DEV NOTE: will be extended to calcuate other measurements, such as standard deviation, mean, median absolute deviation, quartiles, and min/max
+
+---  
+
+### compressCov.sh
+Helper tool to compress bincov output (individual sample files or mutli-sample matrices) into larger bin sizes. By default, median values per new bin are reported.
+```
+usage: compressCov.sh [-h] [-z] [-n] [-o OUTFILE] INPUT RATIO
+
+Helper tool to automate compression of raw binCov.py output bed files or
+bed-style coverage matrices into larger bin sizes
+
+Positional arguments:
+  INPUT     path to binCov.py bed file or bed-stype matrix
+  RATIO     compression ratio
+
+Optional arguments:
+  -h  HELP        Show this help message and exit
+  -o  OUTFILE     Output file (default: stdout)
+  -z  GZIP        Gzip output file
+  -s  SUM         Report sum (default: report median)
+```  
+**Usage Notes:**  
+- Compression ratio (RATIO) must be a positive integer. New bins will be automatically instantiated with a size equal to RATIO times the current binsize. New bins that do not overlap any previous bins (e.g. bins were excluded due to blacklisting (-x) during binCov.py) will not be reported.
+- Input file does not have to be split by chromosome.
