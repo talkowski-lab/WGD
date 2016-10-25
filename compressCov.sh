@@ -67,7 +67,7 @@ if [ ${OUTFILE} == "/dev/stdout" ] && [ ${GZ} == 1 ]; then
 fi
 
 #Scrub ".gz" from output filename if provided by user
-if [ ${OUTFILE: -3} == ".gz" ]; then
+if [ ${GZ} == 1 ] && [ ${OUTFILE: -3} == ".gz" ]; then
   OUTFILE=$( echo "${OUTFILE}" | sed 's/\.gz//g' )
 fi
 
