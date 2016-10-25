@@ -73,6 +73,7 @@ fi
 
 #DEUBG
 echo $OUTFILE
+echo $RATIO
 
 #Unzip input file if gzipped
 GZI=0
