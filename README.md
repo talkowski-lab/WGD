@@ -229,9 +229,9 @@ Positional arguments:
 
 Optional arguments:
   -h  HELP        Show this help message and exit
-  -o  OUTFILE     Output file (default: stdout)
   -z  GZIP        Gzip output file
   -s  SUM         Report sum (default: report median)
+  -o  OUTFILE     Output file (default: stdout)
 ```  
 **Usage Notes:**  
 - Compression ratio (RATIO) must be a positive integer. New bins will be automatically instantiated with a size equal to RATIO times the current binsize. New bins that do not overlap any previous bins (e.g. bins were excluded due to blacklisting (-x) during binCov.py) will not be reported.
