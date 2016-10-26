@@ -101,7 +101,7 @@ while read CONTIG; do
         awk -v CONTIG=${CONTIG} -v OFS="\t" '{ print CONTIG, $1, $2 }' ) \
  -b <( awk -v CONTIG=${CONTIG} -v OFS="\t" '{ if ($1==CONTIG) print $0 }' \
   ${INPUT} ) | awk '{ if ($4!=".") print $0 }'
-done < <( fgrep -v "#" ${INPUT} | cut -f1 | sort | uniq ) > ${OUTFILE}
+done < <( fgrep -v "#" ${INPUT} | cut -f1 | sort -Vk1,1 | uniq ) > ${OUTFILE}
 
 #Gzip output if optioned
 if [ ${GZ} == 1 ]; then
