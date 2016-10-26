@@ -95,12 +95,12 @@ while read CONTIG; do
   MIN=$( awk -v CONTIG=${CONTIG} '{ if ($1==CONTIG) print $2 }' ${INPUT} | head -n1 )
   MAX=$( awk -v CONTIG=${CONTIG} '{ if ($1==CONTIG) print $3 }' ${INPUT} | tail -n1 )
   #Perform bedtools map function (operation dependent on norm/non-norm)
-  awk -v CONTIG=${CONTIG} -v OFS="\t" '{ if ($1==CONTIG) print $0 }' ${INPUT} | \
-  bedtools map -c ${COLS} -o ${BEDOP} -b - \
+  bedtools map -c ${COLS} -o ${BEDOP} \
   -a <( paste <( seq ${MIN} ${NBIN} ${MAX} ) \
               <( seq $((${MIN}+${NBIN})) ${NBIN} $((${MAX}+${NBIN})) ) | \
-        awk -v CONTIG=${CONTIG} -v OFS="\t" '{ print CONTIG, $1, $2 }' ) | \
-  awk '{ if ($4!=".") print $0 }'
+        awk -v CONTIG=${CONTIG} -v OFS="\t" '{ print CONTIG, $1, $2 }' ) \
+ -b <( awk -v CONTIG=${CONTIG} -v OFS="\t" '{ if ($1==CONTIG) print $0 }' \
+  ${INPUT} ) | awk '{ if ($4!=".") print $0 }'
 done < <( fgrep -v "#" ${INPUT} | cut -f1 | sort | uniq ) > ${OUTFILE}
 
 #Gzip output if optioned
