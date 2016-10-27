@@ -114,10 +114,6 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05,
     else:
         bins_filtered = bins
 
-    #Correct filename for py3/py2 string inconsistency
-    if bam.endswith("'") and bam.startswith("b'"):
-        bam = bam[2:-1]
-
     #Filter bam
     if presubbed == True:
         mappings = filter_mappings(bam, mode)
@@ -166,6 +162,10 @@ def main():
                         ' if you are using a bedtools version pre-2.24.0')
     parser.set_defaults(presubbed=False)
     args = parser.parse_args()
+
+    #Correct filename for py3/py2 string inconsistency
+    if args.bam.endswith("'") and args.bam.startswith("b'"):
+        args.bam = args.bam[2:-1]
 
     #Get coverage & write out
     coverage = binCov(args.bam, args.chr, args.binsize,
