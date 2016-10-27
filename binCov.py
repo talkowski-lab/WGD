@@ -114,6 +114,10 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05,
     else:
         bins_filtered = bins
 
+    #Correct filename for py3/py2 string inconsistency
+    if bam.endswith("'") and bam.startswith("b'"):
+        bam = bam[2:-1]
+
     #Filter bam
     if presubbed == True:
         mappings = filter_mappings(bam, mode)
