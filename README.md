@@ -181,13 +181,18 @@ Optional arguments:
 ### makeMatrix.sh
 Helper tool to automate creation of sorted coverage matrices from binCov.py output bed files. Wraps ```bedtools unionbedg```. Note that, in most cases, multiple chromosome outputs from binCov.py from the same sample should be concatenated before being passed to this tool.  
 ```
-usage: makeMatrix.sh [-h] [-o OUTFILE] SAMPLES
+usage: makeMatrix.sh [-h] [-z] [-o OUTFILE] SAMPLES
 
 Helper tool to automate creation of sorted coverage matrices from
 binCov.py output bed files
 
 Positional arguments:
   SAMPLES     List of samples and coverage files (tab-delimmed)
+
+Optional arguments:
+  -h  HELP      Show this help message and exit
+  -z  GZIP      Gzip output file
+  -o  OUTFILE   Output file (default: stdout)
 ```
 **Usage Notes:**  
 - Does not sanity check to ensure that sample IDs are identical between matrices, or that samples were included in the same order when passed to makeMatrix.sh.
