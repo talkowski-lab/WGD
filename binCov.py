@@ -133,7 +133,7 @@ def binCov(bam, chr, binsize, mode='nucleotide', overlap=0.05,
 def main():
     #Add arguments
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('bam', type=pysam.AlignmentFile,
+    parser.add_argument('bam', type=str,
                         help='Input bam')
     parser.add_argument('chr', help='Contig to evaluate')
     parser.add_argument('cov_out', help='Output bed file of raw coverage')
@@ -166,6 +166,9 @@ def main():
     #Correct filename for py3/py2 string inconsistency
     if args.bam.endswith("'") and args.bam.startswith("b'"):
         args.bam = args.bam[2:-1]
+
+    #Stores bam input as pysam.AlignmentFile
+    args.bam = pysam.AlignmentFile(args.bam, 'rb')
 
     #Get coverage & write out
     coverage = binCov(args.bam, args.chr, args.binsize,
