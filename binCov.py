@@ -165,13 +165,15 @@ def main():
 
     #Correct filename for py3/py2 string inconsistency
     if args.bam.endswith("'") and args.bam.startswith("b'"):
-        args.bam = args.bam[2:-1]
+        filename = args.bam[2:-1]
+    else:
+        filename = args.bam
 
     #Stores bam input as pysam.AlignmentFile
-    args.bam = pysam.AlignmentFile(args.bam, 'rb')
+    bamfile = pysam.AlignmentFile(filename, 'rb')
 
     #Get coverage & write out
-    coverage = binCov(args.bam, args.chr, args.binsize,
+    coverage = binCov(bamfile, args.chr, args.binsize,
                       args.mode, args.overlap, args.blacklist, 
                       args.presubbed, args.oldBT)
     coverage.saveas(args.cov_out)
