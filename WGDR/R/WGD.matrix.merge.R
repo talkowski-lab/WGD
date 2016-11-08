@@ -9,15 +9,15 @@
 # Helper function for standardized merger of multiple WGD normalized
 # coverage matrices and automated summary statistic collection.
 ################
-# Returns a four-item list:
+# Returns an five-item list:
 #  $mat : matrix of original values
 #  $res : matrix of residuals
 #  $stat : matrix of per-bin distribution statistics
 #  $rstat : matrix of per-bin residual distribution statistics
-#  $sstat : matrix of per-sample residual distribution statistics
+#  $sstat.res : matrix of per-sample residual distribution statistics
 ################
 
-WGD.matrix.merge <- function(matrices,     #list of matrices imported with WGD.readmatrix
+WGD.matrix.merge <- function(matrices,     #list of matrices imported with WGD.matrix.read
                              innerjoin=T,  #option to only retains bins that appear in all matrices
                              allosomes=F,  #option to auto-exclude non-numeric contigs
                              quiet=F       #option to disable verbose output
@@ -59,6 +59,6 @@ WGD.matrix.merge <- function(matrices,     #list of matrices imported with WGD.r
   }
 
   #Process new merged matrix & return
-  return(WGD.matrix.postprocess(mat))
+  return(WGD.matrix.postprocess(mat,quiet=quiet))
 
 }
