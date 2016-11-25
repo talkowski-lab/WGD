@@ -54,7 +54,7 @@ INPUT=$1
 RATIO=$2
 
 #Check for required input
-if [ -z ${INPUT} ] || [ -z ${RATIO} ] || ! [ -e ${SAMPLES} ]; then
+if [ -z ${INPUT} ] || [ -z ${RATIO} ]; then
   usage
   exit 0
 fi
@@ -89,6 +89,9 @@ COLS=$( seq 4 $((${NSAMP}+3)) | paste -s -d, )
 OBIN=$( fgrep -v "#" ${INPUT} | head -n1 | awk '{ print $3-$2 }' )
 NBIN=$((${RATIO}*${OBIN}))
 
+#Print header from original file to OUTFILE
+head -n1 ${INPUT} > ${OUTFILE}
+
 #Iterate over contigs present in input file
 while read CONTIG; do
   #Get min and max coordinate present in input file for contig
@@ -101,7 +104,7 @@ while read CONTIG; do
         awk -v CONTIG=${CONTIG} -v OFS="\t" '{ print CONTIG, $1, $2 }' ) \
  -b <( awk -v CONTIG=${CONTIG} -v OFS="\t" '{ if ($1==CONTIG) print $0 }' \
   ${INPUT} ) | awk '{ if ($4!=".") print $0 }'
-done < <( fgrep -v "#" ${INPUT} | cut -f1 | sort -Vk1,1 | uniq ) > ${OUTFILE}
+done < <( fgrep -v "#" ${INPUT} | cut -f1 | sort -Vk1,1 | uniq ) >> ${OUTFILE}
 
 #Gzip output if optioned
 if [ ${GZ} == 1 ]; then
