@@ -10,7 +10,7 @@
 usage(){
 cat <<EOF
 
-usage: compressCov.sh [-h] [-z] [-n] [-o OUTFILE] INPUT RATIO
+usage: compressCov.sh [-h] [-z] [-o OUTFILE] INPUT RATIO
 
 Helper tool to automate compression of raw binCov.py output bed files or
 bed-style coverage matrices into larger bin sizes
