@@ -48,10 +48,10 @@ WGD.matrix.merge <- function(matrices,     #list of matrices imported with WGD.m
   if(length(matrices)>2){
     for(i in 3:length(matrices)){
       if(innerjoin==T){
-        mat <- merge(new,
+        mat <- merge(mat,
                      matrices[[i]]$mat)
       }else{
-        mat <- merge(new,
+        mat <- merge(mat,
                      matrices[[i]]$mat,
                      all=T)
       }

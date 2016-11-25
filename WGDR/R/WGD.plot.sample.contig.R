@@ -6,24 +6,38 @@
 ################
 # WGD.plot.sample.contig
 ################
-# Plots genome-wide dosage for a single sample in a WGD matrix.
-# Writes as pdf to OUTDIR
-# Note: uses many undocumented helper plot functions, see
-# package contents for function details.
+# Plots dosage for a single sample in a WGD matrix.
+# Writes as jpeg to OUTDIR
 ################
 
-WGD.plot.sample.contig <- function(mat,            #matrix object from which to plot. Must be read with WGD.readmatrix
-                                   ID,             #ID of sample to plot. Must match column header in mat
-                                   OUTDIR,         #output directory for plot
-                                   filename=NULL,  #add custom filename for output
-                                   sampling=35     #sampling & smoothing rate ([1,100], 1 = least, 100 = most)
+WGD.plot.sample.contig <- function(mat,                #matrix object from which to plot. Must be read with WGD.readmatrix
+                                   ID,                 #ID of sample to plot. Must match column header in mat
+                                   OUTDIR,             #output directory for plot
+                                   filename=NULL,      #add custom filename for output (must be .jpg or .jpeg)
+                                   roll=11,            #bins used in rolling mean
+                                   sampling=5,         #sampling rate for bins to plot
+                                   res=150,            #jpeg resolution passed to jpeg() call
+                                   ylims=NULL,         #limits on y-axis; defaults to displaying 95% of plot data
+                                   color="cyan",       #color to plot sample
+                                   bg.track=NA,        #annotation track to plot on right Y-axis
+                                   bg.roll=1           #bins used in rolling mean of bg.track
 ){
-  #Validate sampling parameter
-  if(is.numeric(sampling)==F | sampling<1 | sampling>100){
+  #Validate roll parameter
+  if(is.numeric(roll)==F | roll<1){
     stop(paste("WGDR::ERROR [",
                strsplit(as.character(Sys.time()),split=" ")[[1]][2],
-               "] ",match.call()[[1]]," parameter 'sampling' must be integer ~ [1,100]",sep=""))
+               "] ",match.call()[[1]]," parameter 'roll' must be positive, whole integer\n",sep=""))
   }
+
+  #Validate bg.roll parameter
+  if(is.numeric(bg.roll)==F | bg.roll<1){
+    stop(paste("WGDR::ERROR [",
+               strsplit(as.character(Sys.time()),split=" ")[[1]][2],
+               "] ",match.call()[[1]]," parameter 'bg.roll' must be positive, whole integer\n",sep=""))
+  }
+
+  #Require zoo for rolling means
+  require(zoo)
 
   #Ensure output directory exists
   if(file.exists(OUTDIR)==F){
@@ -38,8 +52,25 @@ WGD.plot.sample.contig <- function(mat,            #matrix object from which to 
   #Disable scientific notation
   options(scipen=1000)
 
-  #Gather identity and order of contigs
-  contigs <- unique(mat$mat$chr)
+  #Slice sample of interest from mat
+  pd <- mat$res[,c(1:3,which(colnames(mat$res)==ID))]
+
+  #Apply rolling mean to normalized coverage residuals
+  if(roll>1){
+    pd[,4] <- rollmean(pd[,4],roll,na.pad=T)
+  }
+
+  #Downsample normalized coverage residuals
+  pd <- pd[seq(1,nrow(pd),sampling),]
+
+  #Instantiate y-axis limits
+  # if(is.null(ylims)){
+    ymax <- 2*round(10*max(abs(c(quantile(pd[,4],0.025,na.rm=T),quantile(pd[,4],0.975,na.rm=T)))),0)/10
+    ylims <- c(-ymax,ymax)
+  # }
+
+  plot(pd[,2],pd[,4],ylim=ylims,col=color,cex=0.2)
+
 
   #Prepare layout
   if(!is.null(filename)){

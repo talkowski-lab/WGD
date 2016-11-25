@@ -9,19 +9,22 @@
 # Isolates top N% of most discordant bins from a pair of WGDR matrices
 # and fits a GMM to those bins from two training matrices
 ################
-# Returns a two-item list:
+# Returns a four-item list:
+#  $all: : a BED-style data frame of all bins (unfiltered) with mean and sd per assignment group
 #  $fp.full : a BED-style data frame of all bins used in fingerprinting with mean and sd per assignment group
 #  $fp.final : a BED-style data frame of the final set of bins used for training the GMM classifier
 #  $model : GMM classifier fit to fp.final
 ################
 
-WGD.fingerprint.create <- function(matA,matB,   #matrix objects from which to read. Must be read with WGD.readmatrix
-                            alpha=1E-8,         #Bonferroni-corrected false discovery rate of selected bins will be controlled to this probability
-                            minDiff=0.6,        #minimum difference between means for two-sample t-test
-                            maxBins=100,        #restricts maximum number of bins for training
-                            QCplot=F,           #option to plot fingerprint QC plots
-                            OUTDIR=NA,          #output directory for fingerprint QC plots
-                            quiet=F             #option to disable verbose output
+WGD.fingerprint.create <- function(matA,matB,          #matrix objects from which to read. Must be read with WGD.readmatrix
+                                   alpha=1E-8,         #Bonferroni-corrected false discovery rate of selected bins will be controlled to this probability
+                                   minDiff=0.6,        #minimum difference between means for two-sample t-test
+                                   maxBins=100,        #restricts maximum number of bins for training
+                                   QCplot=F,           #option to plot fingerprint QC plots
+                                   writeFP=T,          #option to write fingerprints to file
+                                   gzip=T,             #option to gzip fingerprint files
+                                   OUTDIR=NA,          #output directory for fingerprint QC plots
+                                   quiet=F             #option to disable verbose output
 ){
   #Sanity check alpha parameter
   if(is.numeric(alpha)==F | alpha<=0 | alpha>1){
@@ -104,6 +107,24 @@ WGD.fingerprint.create <- function(matA,matB,   #matrix objects from which to re
   #Merges matA and matB to determine training distributions
   all <- WGD.matrix.merge(list(matA,matB),quiet=T)
 
+  #Saves summary statistics for all bins prior to filtering
+  allbins.stats <- all$res[,1:3]
+  allbins.stats$dAB <- dAB
+  allbins.stats$p <- NA
+  allbins.stats$p[bins.to.test] <- bins.t
+  allbins.stats$mean <- all$rstat$mean
+  allbins.stats$sd <- all$rstat$sd
+  allbins.stats$rankMean <- all$rstat$mean.rank
+  allbins.stats$rankSD <- apply(all$res.ranks[,-c(1:3)],1,sd)
+  allbins.stats$A.mean <- matA$rstat$mean
+  allbins.stats$A.sd <- matA$rstat$sd
+  allbins.stats$A.rankMean <- matA$rstat$mean.rank
+  allbins.stats$A.rankSD <- apply(matA$res.ranks[,-c(1:3)],1,sd)
+  allbins.stats$B.mean <- matB$rstat$mean
+  allbins.stats$B.sd <- matB$rstat$sd
+  allbins.stats$B.rankMean <- matB$rstat$mean.rank
+  allbins.stats$B.rankSD <- apply(matB$res.ranks[,-c(1:3)],1,sd)
+
   #Add priors to fingerprint bins
   fingerprint$dAB <- dAB[bins.to.keep]
   fingerprint$p <- bins.t[which(bins.t<=alpha)]
@@ -124,7 +145,7 @@ WGD.fingerprint.create <- function(matA,matB,   #matrix objects from which to re
   if(QCplot==T){
 
     #Sets default filename
-    filename=paste("WGD.fingerprintQC.full.",Sys.Date(),".jpg",sep="")
+    filename=paste("WGD.fingerprintQC.full.",Sys.Date(),".tiff",sep="")
 
     #Prints status
     if(quiet==F){
@@ -135,7 +156,7 @@ WGD.fingerprint.create <- function(matA,matB,   #matrix objects from which to re
     }
 
     #Prepares plots
-    jpeg(paste(OUTDIR,"/",filename,sep=""),height=500,width=1000,quality=150)
+    tiff(paste(OUTDIR,"/",filename,sep=""),height=500,width=1000)
     par(mar=c(0.3,3.6,3.1,0.6),bty="o",mfrow=c(2,1))
 
     #First plot - ranks
@@ -166,7 +187,7 @@ WGD.fingerprint.create <- function(matA,matB,   #matrix objects from which to re
 
     #Second plot - normalized coverage residuals
     par(mar=c(3.1,3.6,0.3,0.6))
-    ylim <- ceiling(10*quantile(abs(c(fingerprint$A.mean,fingerprint$B.mean)),0.99))/10
+    ylim <- ceiling(10*quantile(abs(c(fingerprint$A.mean,fingerprint$B.mean)),0.99,na.rm=T))/10
     plot(x=range(matA$mat$start),y=c(-ylim,ylim),
          type="n",xaxt="n",yaxt="n",xaxs="i",yaxs="i",xlab="",ylab="",main="")
     abline(h=seq(-ylim,ylim,0.1),col="gray90")
@@ -196,29 +217,30 @@ WGD.fingerprint.create <- function(matA,matB,   #matrix objects from which to re
     dev.off()
   }
 
-  #Further filter fingerprint bins if at least three-fold more bins selected than will be used as features
-  if(4*maxBins<length(bins.to.keep)){
+  #Further filter fingerprint bins if at least five-fold more bins selected than will be used as features
+  if(5*maxBins<length(bins.to.keep)){
     #remove lowest 25% of p-values and dABs, and remove 25% of bins with largest sd
     maxsds <- apply(cbind(fingerprint$A.sd,fingerprint$B.sd),1,max)
-    fingerprint.subset <- fingerprint[which(fingerprint$p<=quantile(fingerprint$p,0.75) &
-                                              abs(fingerprint$dAB)>=quantile(abs(fingerprint$dAB),0.25) &
-                                              maxsds<=quantile(maxsds,0.75)),]
+    fingerprint.subset <- fingerprint[which(fingerprint$p<=quantile(fingerprint$p,0.75,na.rm=T) &
+                                              abs(fingerprint$dAB)>=quantile(abs(fingerprint$dAB),0.25,na.rm=T) &
+                                              maxsds<=quantile(maxsds,0.75,na.rm=T)),]
+  }else{
+    fingerprint.subset <- fingerprint
   }
 
   #Subset final training bins evenly distributed across the chromosome
   if(nrow(fingerprint.subset)>maxBins){
     step <- round(nrow(bins.in.both)/maxBins,0)
     midpoints <- bins.in.both$start[seq(1,nrow(bins.in.both),step)]
-    spaced.bins <- unlist(sapply(midpoints,function(val){
-      which(abs(fingerprint.subset$start-val)==min(abs(fingerprint.subset$start-val)))
-    }))
-    repeat{
-      spaced.bins <- sort(c(unique(spaced.bins),spaced.bins[duplicated(spaced.bins)]+1))
-      if(length(unique(spaced.bins))>=maxBins){
-        break
-      }
-    }
+    spaced.bins <- unique(unlist(sapply(midpoints,function(midpoint){
+      nn <- which(abs(fingerprint.subset$start-midpoint)==min(abs(fingerprint.subset$start-midpoint)))
+      return(nn)
+    })))
     fingerprint.subset <- fingerprint.subset[spaced.bins,]
+
+    #Remove duplicate and NA bins (occurs if spacing of informative bins across chromosome is especially nonuniform)
+    fingerprint.subset <- unique(fingerprint.subset)
+    fingerprint.subset <- fingerprint.subset[rownames(fingerprint.subset)!="NA",]
 
     #Prints status
     if(quiet==F){
@@ -227,92 +249,89 @@ WGD.fingerprint.create <- function(matA,matB,   #matrix objects from which to re
                 "]: filtered final fingerprint to ",nrow(fingerprint.subset),
                 " most informative and evenly spaced bins\n",sep=""))
     }
+  }
 
-    #Generates final fingerprint QC plot (if optioned)
-    if(QCplot==T){
+  #Generates final fingerprint QC plot (if optioned)
+  if(QCplot==T){
 
-      #Sets default filename
-      filename=paste("WGD.fingerprintQC.final.",Sys.Date(),".jpg",sep="")
+    #Sets default filename
+    filename=paste("WGD.fingerprintQC.final.",Sys.Date(),".tiff",sep="")
 
-      #Prepares plots
-      jpeg(paste(OUTDIR,"/",filename,sep=""),height=500,width=1000,quality=150)
-      par(mar=c(0.3,3.6,3.1,0.6),bty="o",mfrow=c(2,1))
+    #Prepares plots
+    tiff(paste(OUTDIR,"/",filename,sep=""),height=500,width=1000)
+    par(mar=c(0.3,3.6,3.1,0.6),bty="o",mfrow=c(2,1))
 
-      #First plot - ranks
-      plot(x=range(matA$mat$start),y=c(0,1),type="n",
-           xaxt="n",yaxt="n",xaxs="i",yaxs="i",xlab="",ylab="",
-           main=paste("WGD Bin fingerprint.subset Selection (Final)\n",
-                      "(",prettyNum(nrow(fingerprint.subset),big.mark=","),"/",
-                      prettyNum(nrow(matA$mat),big.mark=","),
-                      " bins applied)",sep=""))
-      abline(h=seq(0,1,0.1),col="gray90")
-      abline(h=0.5)
-      # segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
-      #          y0=fingerprint.subset$A.rankMean,y1=fingerprint.subset$B.rankMean,
-      #          col="gray50")
-      segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
-               y0=fingerprint.subset$A.rankMean-fingerprint.subset$A.rankSD,
-               y1=fingerprint.subset$A.rankMean+fingerprint.subset$A.rankSD,
-               col="blue")
-      segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
-               y0=fingerprint.subset$B.rankMean-fingerprint.subset$B.rankSD,
-               y1=fingerprint.subset$B.rankMean+fingerprint.subset$B.rankSD,
-               col="red")
-      points(x=fingerprint.subset$start,y=fingerprint.subset$A.rankMean,
-             pch=23,col="blue",bg="white",cex=0.7)
-      points(x=fingerprint.subset$start,y=fingerprint.subset$B.rankMean,
-             pch=23,col="red",bg="white",cex=0.7)
-      axis(2,at=seq(0,1,0.1),labels=seq(0,100,10),las=2,cex.axis=0.65)
-      mtext(text="Ranked Coverage Percentiles",2,line=1.8)
+    #First plot - ranks
+    plot(x=range(matA$mat$start),y=c(0,1),type="n",
+         xaxt="n",yaxt="n",xaxs="i",yaxs="i",xlab="",ylab="",
+         main=paste("WGD Bin Fingerprint Selection (Final)\n",
+                    "(",prettyNum(nrow(fingerprint.subset),big.mark=","),"/",
+                    prettyNum(nrow(matA$mat),big.mark=","),
+                    " bins selected)",sep=""))
+    abline(h=seq(0,1,0.1),col="gray90")
+    abline(h=0.5)
+    segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
+             y0=fingerprint.subset$A.rankMean-fingerprint.subset$A.rankSD,
+             y1=fingerprint.subset$A.rankMean+fingerprint.subset$A.rankSD,
+             col="blue")
+    segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
+             y0=fingerprint.subset$B.rankMean-fingerprint.subset$B.rankSD,
+             y1=fingerprint.subset$B.rankMean+fingerprint.subset$B.rankSD,
+             col="red")
+    points(x=fingerprint.subset$start,y=fingerprint.subset$A.rankMean,
+           pch=23,col="blue",bg="white",cex=0.7)
+    points(x=fingerprint.subset$start,y=fingerprint.subset$B.rankMean,
+           pch=23,col="red",bg="white",cex=0.7)
+    axis(2,at=seq(0,1,0.1),labels=seq(0,100,10),las=2,cex.axis=0.65)
+    mtext(text="Ranked Coverage Percentiles",2,line=1.8)
 
-      #Second plot - normalized coverage residuals
-      par(mar=c(3.1,3.6,0.3,0.6))
-      ylim <- ceiling(10*quantile(abs(c(fingerprint.subset$A.mean,fingerprint.subset$B.mean)),0.99))/10
-      plot(x=range(matA$mat$start),y=c(-ylim,ylim),
-           type="n",xaxt="n",yaxt="n",xaxs="i",yaxs="i",xlab="",ylab="",main="")
-      abline(h=seq(-ylim,ylim,0.1),col="gray90")
-      abline(h=0)
-      segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
-               y0=fingerprint.subset$A.mean,y1=fingerprint.subset$B.mean,
-               col="gray50")
-      segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
-               y0=fingerprint.subset$A.mean-fingerprint.subset$A.sd,
-               y1=fingerprint.subset$A.mean+fingerprint.subset$A.sd,
-               col="blue")
-      segments(x0=fingerprint.subset$start,x1=fingerprint.subset$end,
-               y0=fingerprint.subset$A.mean-fingerprint.subset$A.sd,
-               y1=fingerprint.subset$A.mean-fingerprint.subset$A.sd,
-               col="blue")
-      segments(x0=fingerprint.subset$start,x1=fingerprint.subset$end,
-               y0=fingerprint.subset$A.mean+fingerprint.subset$A.sd,
-               y1=fingerprint.subset$A.mean+fingerprint.subset$A.sd,
-               col="blue")
-      segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
-               y0=fingerprint.subset$B.mean-fingerprint.subset$B.sd,
-               y1=fingerprint.subset$B.mean+fingerprint.subset$B.sd,
-               col="red")
-      segments(x0=fingerprint.subset$start,x1=fingerprint.subset$end,
-               y0=fingerprint.subset$B.mean-fingerprint.subset$B.sd,
-               y1=fingerprint.subset$B.mean-fingerprint.subset$B.sd,
-               col="red")
-      segments(x0=fingerprint.subset$start,x1=fingerprint.subset$end,
-               y0=fingerprint.subset$B.mean+fingerprint.subset$B.sd,
-               y1=fingerprint.subset$B.mean+fingerprint.subset$B.sd,
-               col="red")
-      points(x=fingerprint.subset$start,y=fingerprint.subset$A.mean,
-             pch=23,col="blue",bg="white",cex=0.7)
-      points(x=fingerprint.subset$start,y=fingerprint.subset$B.mean,
-             pch=23,col="red",bg="white",cex=0.7)
-      axis(2,at=seq(-ylim,ylim,0.1),las=2,cex.axis=0.65,
-           labels=paste(round(seq(-ylim,ylim,0.1)*100,0),"%",sep=""))
-      mtext(text="Normalized Coverage Deviance",2,line=2.3)
-      axis(1,at=seq(min(matA$mat$start),max(matA$mat$end),
-                    by=diff(range(matA$mat$start))/12),cex.axis=0.75,
-           labels=paste(round(seq(min(matA$mat$start),max(matA$mat$end),
-                                  by=diff(range(matA$mat$start))/12)/1000000,0),"Mb",sep=""))
-      mtext(text="Genomic Coordinate",1,line=1.8)
-      dev.off()
-    }
+    #Second plot - normalized coverage residuals
+    par(mar=c(3.1,3.6,0.3,0.6))
+    ylim <- ceiling(10*quantile(abs(c(fingerprint.subset$A.mean,fingerprint.subset$B.mean)),0.99,na.rm=T))/10
+    plot(x=range(matA$mat$start),y=c(-ylim,ylim),
+         type="n",xaxt="n",yaxt="n",xaxs="i",yaxs="i",xlab="",ylab="",main="")
+    abline(h=seq(-ylim,ylim,0.1),col="gray90")
+    abline(h=0)
+    segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
+             y0=fingerprint.subset$A.mean,y1=fingerprint.subset$B.mean,
+             col="gray50")
+    segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
+             y0=fingerprint.subset$A.mean-fingerprint.subset$A.sd,
+             y1=fingerprint.subset$A.mean+fingerprint.subset$A.sd,
+             col="blue")
+    segments(x0=fingerprint.subset$start,x1=fingerprint.subset$end,
+             y0=fingerprint.subset$A.mean-fingerprint.subset$A.sd,
+             y1=fingerprint.subset$A.mean-fingerprint.subset$A.sd,
+             col="blue")
+    segments(x0=fingerprint.subset$start,x1=fingerprint.subset$end,
+             y0=fingerprint.subset$A.mean+fingerprint.subset$A.sd,
+             y1=fingerprint.subset$A.mean+fingerprint.subset$A.sd,
+             col="blue")
+    segments(x0=fingerprint.subset$start,x1=fingerprint.subset$start,
+             y0=fingerprint.subset$B.mean-fingerprint.subset$B.sd,
+             y1=fingerprint.subset$B.mean+fingerprint.subset$B.sd,
+             col="red")
+    segments(x0=fingerprint.subset$start,x1=fingerprint.subset$end,
+             y0=fingerprint.subset$B.mean-fingerprint.subset$B.sd,
+             y1=fingerprint.subset$B.mean-fingerprint.subset$B.sd,
+             col="red")
+    segments(x0=fingerprint.subset$start,x1=fingerprint.subset$end,
+             y0=fingerprint.subset$B.mean+fingerprint.subset$B.sd,
+             y1=fingerprint.subset$B.mean+fingerprint.subset$B.sd,
+             col="red")
+    points(x=fingerprint.subset$start,y=fingerprint.subset$A.mean,
+           pch=23,col="blue",bg="white",cex=0.7)
+    points(x=fingerprint.subset$start,y=fingerprint.subset$B.mean,
+           pch=23,col="red",bg="white",cex=0.7)
+    axis(2,at=seq(-ylim,ylim,0.1),las=2,cex.axis=0.65,
+         labels=paste(round(seq(-ylim,ylim,0.1)*100,0),"%",sep=""))
+    mtext(text="Normalized Coverage Deviance",2,line=2.3)
+    axis(1,at=seq(min(matA$mat$start),max(matA$mat$end),
+                  by=diff(range(matA$mat$start))/12),cex.axis=0.75,
+         labels=paste(round(seq(min(matA$mat$start),max(matA$mat$end),
+                                by=diff(range(matA$mat$start))/12)/1000000,0),"Mb",sep=""))
+    mtext(text="Genomic Coordinate",1,line=1.8)
+    dev.off()
   }
 
   #Prints status
@@ -339,23 +358,27 @@ WGD.fingerprint.create <- function(matA,matB,   #matrix objects from which to re
   assignments <- as.factor(c(rep("A",ncol(matA$mat)-3),
                              rep("B",ncol(matB$mat)-3)))
   GMM <- MclustDA(data=train.matrix,class=assignments)
-#
-#   #Prints NxN clustering matrix if QC plots are optioned
-#   if(QCplot==T){
-#
-#     #Sets default filename
-#     filename=paste("WGD.GMM_QC.",Sys.Date(),".jpg",sep="")
-#
-#     #Plots clusters
-#     jpeg(paste(OUTDIR,"/",filename,sep=""),
-#          height=50*ncol(train.matrix),
-#          width=50*ncol(train.matrix))
-#     clPairs(train.matrix,assignments)
-#     dev.off()
-#   }
+
+  #Writes fingerprints to file if optioned
+  if(writeFP==T){
+    allbins.stats.path <- paste(OUTDIR,"WGD.fingerprint.final.",Sys.Date(),".ALL_BINS.bed",sep="")
+    write.table(allbins.stats,allbins.stats.path,
+                col.names=T,row.names=F,sep="\t",quote=F)
+    fingerprint.path <- paste(OUTDIR,"WGD.fingerprint.final.",Sys.Date(),".FP_FULL.bed",sep="")
+    write.table(fingerprint,fingerprint.path,
+                col.names=T,row.names=F,sep="\t",quote=F)
+    fingerprint.subset.path <- paste(OUTDIR,"WGD.fingerprint.final.",Sys.Date(),".FP_FINAL.bed",sep="")
+    write.table(fingerprint.subset,fingerprint.subset.path,
+                col.names=T,row.names=F,sep="\t",quote=F)
+    if(gzip==T){
+      system(paste("gzip",allbins.stats.path,fingerprint.path,fingerprint.subset.path,sep=" "),
+             wait=T,intern=F)
+    }
+  }
 
   #Returns fingerprint & model
-  return(list("fp.full"=fingerprint,
+  return(list("all"=allbins.stats,
+              "fp.full"=fingerprint,
               "fp.final"=fingerprint.subset,
               "model"=GMM))
 }

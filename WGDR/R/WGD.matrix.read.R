@@ -34,7 +34,7 @@ WGD.matrix.read <- function(path,        #full path to matrix file
   }
 
   #Read matrix & relabel bed column headers
-  mat <- read.table(path,header=T)
+  mat <- read.table(path,header=T,comment.char="")
   names(mat)[1:3] <- c("chr","start","end")
 
   #Prints status
