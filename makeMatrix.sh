@@ -70,6 +70,11 @@ fi
   -names $( while read ID cov; do echo "${ID}"; done < ${SAMPLES} | paste -s -d\  )\
   -i $( while read ID cov; do echo "${cov}"; done < ${SAMPLES} | paste -s -d\  )|\
   sed -e 's/chrom/Chr/g' -e 's/start/Start/g' -e 's/end/End/g' > ${OUTFILE}
+  
+#Add hash to header line of OUTFILE
+cat <( head -n1 ${OUTFILE} | awk '{ print "#"$1 }' ) \
+    <( sed '1d' ${OUTFILE} ) > ${OUTFILE}2
+    mv ${OUTFILE}2 ${OUTFILE}
 
 #Gzip OUTFILE, if optioned
 if [ ${GZ}==1 ] && [ ${OUTFILE} != "/dev/stdout" ]; then
