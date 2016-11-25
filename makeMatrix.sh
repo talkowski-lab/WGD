@@ -72,7 +72,7 @@ fi
   sed -e 's/chrom/Chr/g' -e 's/start/Start/g' -e 's/end/End/g' > ${OUTFILE}
   
 #Add hash to header line of OUTFILE
-cat <( head -n1 ${OUTFILE} | awk '{ print "#"$1 }' ) \
+cat <( head -n1 ${OUTFILE} | awk '{ print "#"$0 }' ) \
     <( sed '1d' ${OUTFILE} ) > ${OUTFILE}2
     mv ${OUTFILE}2 ${OUTFILE}
 
