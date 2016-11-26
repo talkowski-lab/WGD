@@ -334,6 +334,23 @@ WGD.fingerprint.create <- function(matA,matB,          #matrix objects from whic
     dev.off()
   }
 
+  #Writes fingerprints to file if optioned
+  if(writeFP==T){
+    allbins.stats.path <- paste(OUTDIR,"WGD.fingerprint.final.",Sys.Date(),".ALL_BINS.bed",sep="")
+    write.table(allbins.stats,allbins.stats.path,
+                col.names=T,row.names=F,sep="\t",quote=F)
+    fingerprint.path <- paste(OUTDIR,"WGD.fingerprint.final.",Sys.Date(),".FP_FULL.bed",sep="")
+    write.table(fingerprint,fingerprint.path,
+                col.names=T,row.names=F,sep="\t",quote=F)
+    fingerprint.subset.path <- paste(OUTDIR,"WGD.fingerprint.final.",Sys.Date(),".FP_FINAL.bed",sep="")
+    write.table(fingerprint.subset,fingerprint.subset.path,
+                col.names=T,row.names=F,sep="\t",quote=F)
+    if(gzip==T){
+      system(paste("gzip",allbins.stats.path,fingerprint.path,fingerprint.subset.path,sep=" "),
+             wait=T,intern=F)
+    }
+  }
+
   #Prints status
   if(quiet==F){
     cat(paste("WGDR::STATUS [",
@@ -358,23 +375,6 @@ WGD.fingerprint.create <- function(matA,matB,          #matrix objects from whic
   assignments <- as.factor(c(rep("A",ncol(matA$mat)-3),
                              rep("B",ncol(matB$mat)-3)))
   GMM <- MclustDA(data=train.matrix,class=assignments)
-
-  #Writes fingerprints to file if optioned
-  if(writeFP==T){
-    allbins.stats.path <- paste(OUTDIR,"WGD.fingerprint.final.",Sys.Date(),".ALL_BINS.bed",sep="")
-    write.table(allbins.stats,allbins.stats.path,
-                col.names=T,row.names=F,sep="\t",quote=F)
-    fingerprint.path <- paste(OUTDIR,"WGD.fingerprint.final.",Sys.Date(),".FP_FULL.bed",sep="")
-    write.table(fingerprint,fingerprint.path,
-                col.names=T,row.names=F,sep="\t",quote=F)
-    fingerprint.subset.path <- paste(OUTDIR,"WGD.fingerprint.final.",Sys.Date(),".FP_FINAL.bed",sep="")
-    write.table(fingerprint.subset,fingerprint.subset.path,
-                col.names=T,row.names=F,sep="\t",quote=F)
-    if(gzip==T){
-      system(paste("gzip",allbins.stats.path,fingerprint.path,fingerprint.subset.path,sep=" "),
-             wait=T,intern=F)
-    }
-  }
 
   #Returns fingerprint & model
   return(list("all"=allbins.stats,
