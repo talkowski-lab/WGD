@@ -19,7 +19,9 @@ option_list <- list(
   make_option(c("-b","--binwise"), action="store_true", default=FALSE,
               help="compute medians of all samples per bin [default: median of all bins per sample]"),
   make_option(c("-s","--stdev"), action="store_true", default=FALSE,
-              help="compute standard deviation of all bins per sample [default: FALSE]"))
+              help="compute standard deviation of all bins per sample [default: FALSE]"),
+  make_option(c("-H","--header"), action="store_true", default=FALSE,
+              help="input coverage matrix has header with sample IDs [default: FALSE]"))
 
 # Get command-line arguments and options
 args <- parse_args(OptionParser(usage="%prog [options] covMatrix.bed OUTFILE",
@@ -33,7 +35,11 @@ if(length(args$args) != 2)
   stop()}
 
 # Read matrix
-cov <- read.table(args$args[1], header=T)
+if(opts$header==T){
+  cov <- read.table(args$args[1], header=T, comment.char="")
+}else{
+  cov <- read.table(args$args[1], header=F, comment.char="#")
+}
 
 # Function to compute medians per sample
 covPerSample <- function(cov,downsample=1000000,sd=F){
@@ -42,25 +48,29 @@ covPerSample <- function(cov,downsample=1000000,sd=F){
     cov <- cov[sample(1:nrow(cov), downsample),]
   }
   # Get medians with and without zero-cov bins
-  zerobins <- which(as.integer(apply(cov, 1, median)) == 0)
-  withzeros <- as.numeric(apply(cov[,-c(1:3)], 2, median))
-  withoutzeros <- as.numeric(apply(cov[-zerobins,-c(1:3)], 2, median))
+  zerobins <- which(as.integer(apply(as.data.frame(cov[,-c(1:3)]), 1, median)) == 0)
+  withzeros <- as.numeric(apply(as.data.frame(cov[,-c(1:3)]), 2, median))
+  withoutzeros <- as.numeric(apply(as.data.frame(cov[-zerobins,-c(1:3)]), 2, median))
   #Get SDs with and without zero-cov bins (if optioned)
   if(sd==T){
-    withzeros.sd <- as.numeric(apply(cov[,-c(1:3)], 2, sd))
-    withoutzeros.sd <- as.numeric(apply(cov[-zerobins,-c(1:3)], 2, sd))
+    withzeros.sd <- as.numeric(apply(as.data.frame(cov[,-c(1:3)]), 2, sd))
+    withoutzeros.sd <- as.numeric(apply(as.data.frame(cov[-zerobins,-c(1:3)]), 2, sd))
   }
-  # compile results df to return
+  # Compile results df to return
   if(sd==T){
-    res <- data.frame("ID"=names(cov[,-c(1:3)]),
+    res <- data.frame("ID"=paste("Sample",1:(ncol(cov)-3),sep=""),
                       "Med_withZeros"=withzeros,
                       "Med_withoutZeros"=withoutzeros,
                       "SD_withZeros"=withzeros.sd,
                       "SD_withoutZeros"=withoutzeros.sd)
   }else{
-    res <- data.frame("ID"=names(cov[,-c(1:3)]),
+    res <- data.frame("ID"=paste("Sample",1:(ncol(cov)-3),sep=""),
                       "Med_withZeros"=withzeros,
                       "Med_withoutZeros"=withoutzeros)
+  }
+  # Replace sample IDs if input matrix has header
+  if(opts$header==T){
+    res$ID <- names(cov[,-c(1:3)])
   }
   # Return output df
   return(res)
@@ -73,7 +83,7 @@ covPerBin <- function(cov,downsample=500,sd=F){
     cov <- cov[,sample(1:ncol(cov), downsample)]
   }
   # Get medians with and without zero-cov samples
-  meds <- t(apply(cov[,-c(1:3)], 1, function(vals){
+  meds <- t(apply(as.data.frame(cov[,-c(1:3)]), 1, function(vals){
     withzeros <- median(vals)
     if(any(vals>0)){
       withoutzeros <- median(vals[which(vals>0)])
@@ -83,7 +93,7 @@ covPerBin <- function(cov,downsample=500,sd=F){
     return(c(withzeros,withoutzeros))
   }))
   # Get standard deviations (if optioned)
-  sds <- t(apply(cov[,-c(1:3)], 1, function(vals){
+  sds <- t(apply(as.data.frame(cov[,-c(1:3)]), 1, function(vals){
     withzeros <- sd(vals)
     if(any(vals>0)){
       withoutzeros <- sd(vals[which(vals>0)])
