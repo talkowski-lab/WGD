@@ -18,8 +18,8 @@ require(optparse)
 option_list <- list(
   make_option(c("-b","--binwise"), action="store_true", default=FALSE,
               help="compute medians of all samples per bin [default: median of all bins per sample]"),
-  make_option(c("-s","--stdev"), action="store_true", default=FALSE,
-              help="compute standard deviation of all bins per sample [default: FALSE]"),
+  make_option(c("-m","--mad"), action="store_true", default=FALSE,
+              help="compute median absolute deviation of all bins per sample [default: FALSE]"),
   make_option(c("-H","--header"), action="store_true", default=FALSE,
               help="input coverage matrix has header with sample IDs [default: FALSE]"))
 
@@ -42,7 +42,7 @@ if(opts$header==T){
 }
 
 # Function to compute medians per sample
-covPerSample <- function(cov,downsample=1000000,sd=F){
+covPerSample <- function(cov,downsample=1000000,mad=F){
   # Downsample to 1M random rows if nrows > 1M (for computational efficiency)
   if(nrow(cov)>1000000){
     cov <- cov[sample(1:nrow(cov), downsample),]
@@ -52,17 +52,17 @@ covPerSample <- function(cov,downsample=1000000,sd=F){
   withzeros <- as.numeric(apply(as.data.frame(cov[,-c(1:3)]), 2, median))
   withoutzeros <- as.numeric(apply(as.data.frame(cov[-zerobins,-c(1:3)]), 2, median))
   #Get SDs with and without zero-cov bins (if optioned)
-  if(sd==T){
-    withzeros.sd <- as.numeric(apply(as.data.frame(cov[,-c(1:3)]), 2, sd))
-    withoutzeros.sd <- as.numeric(apply(as.data.frame(cov[-zerobins,-c(1:3)]), 2, sd))
+  if(mad==T){
+    withzeros.mad <- as.numeric(apply(as.data.frame(cov[,-c(1:3)]), 2, mad))
+    withoutzeros.mad <- as.numeric(apply(as.data.frame(cov[-zerobins,-c(1:3)]), 2, mad))
   }
   # Compile results df to return
-  if(sd==T){
+  if(mad==T){
     res <- data.frame("ID"=paste("Sample",1:(ncol(cov)-3),sep=""),
                       "Med_withZeros"=withzeros,
                       "Med_withoutZeros"=withoutzeros,
-                      "SD_withZeros"=withzeros.sd,
-                      "SD_withoutZeros"=withoutzeros.sd)
+                      "MAD_withZeros"=withzeros.mad,
+                      "MAD_withoutZeros"=withoutzeros.mad)
   }else{
     res <- data.frame("ID"=paste("Sample",1:(ncol(cov)-3),sep=""),
                       "Med_withZeros"=withzeros,
@@ -77,7 +77,7 @@ covPerSample <- function(cov,downsample=1000000,sd=F){
 }
 
 # Function to compute medians per bin
-covPerBin <- function(cov,downsample=500,sd=F){
+covPerBin <- function(cov,downsample=500,mad=F){
   # Downsample to 500 random samples if nsamples > 500 (for computational efficiency)
   if(ncol(cov)>503){
     cov <- cov[,sample(1:ncol(cov), downsample)]
@@ -94,21 +94,21 @@ covPerBin <- function(cov,downsample=500,sd=F){
   }))
   # Get standard deviations (if optioned)
   sds <- t(apply(as.data.frame(cov[,-c(1:3)]), 1, function(vals){
-    withzeros <- sd(vals)
+    withzeros <- mad(vals)
     if(any(vals>0)){
-      withoutzeros <- sd(vals[which(vals>0)])
+      withoutzeros <- mad(vals[which(vals>0)])
     }else{
       withoutzeros <- NA
     }
     return(c(withzeros,withoutzeros))
   }))
   # compile results df to return
-  if(sd==T){
+  if(mad==T){
     res <- data.frame("#chr"=cov[,1],"start"=cov[,2],"end"=cov[,3],
                       "Med_withZeros"=meds[,1],
                       "Med_withoutZeros"=meds[,2],
-                      "SD_withZeros"=sds[,1],
-                      "SD_withoutZeros"=sds[,2])
+                      "MAD_withZeros"=sds[,1],
+                      "MAD_withoutZeros"=sds[,2])
   }else{
     res <- data.frame("#chr"=cov[,1],"start"=cov[,2],"end"=cov[,3],
                       "Med_withZeros"=meds[,1],
@@ -120,11 +120,11 @@ covPerBin <- function(cov,downsample=500,sd=F){
 
 # Compute appropriate medians & write out
 if(opts$binwise==TRUE){
-  res <- covPerBin(cov,sd=opts$stdev)
+  res <- covPerBin(cov,mad=opts$mad)
   names(res)[1] <- "#chr"
   write.table(res,args$args[2], sep="\t", col.names=T, row.names=F, quote=F)
 }else{
-  res <- covPerSample(cov,sd=opts$stdev)
+  res <- covPerSample(cov,mad=opts$mad)
   names(res)[1] <- "#ID"
   write.table(res,args$args[2], sep="\t", col.names=T, row.names=F, quote=F)
 }
