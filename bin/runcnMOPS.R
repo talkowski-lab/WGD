@@ -6,10 +6,8 @@
 
 # Script to run cn.MOPS on a coverage matrix as output by makeMatrix.sh
 
-####Load packages
+####Load optparse
 require(optparse)
-require(cn.mops)
-require(rtracklayer)
 
 ####List of command-line options
 option_list <- list(
@@ -33,6 +31,10 @@ if(length(args$args) != 2){
 path.to.matrix <- args$args[1]
 OUTDIR <- args$args[2]
 ID <- opts$ID
+
+####Loads remiaining packages
+require(cn.mops)
+require(rtracklayer)
 
 ####Helper function for coercing data frames to GRanges
 dataframe2GRanges <- function (df, keepColumns = TRUE, ignoreStrand = TRUE){
