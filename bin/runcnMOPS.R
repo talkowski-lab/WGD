@@ -72,7 +72,7 @@ cov <- read.table(path.to.matrix,header=T,sep="\t",stringsAsFactors=F,comment.ch
 cov[2:ncol(cov)] <- apply(cov[2:ncol(cov)],2,function(vals){
   return(as.numeric(as.character(vals)))
 })
-colnames(cov)[2:3] <- c("Start","Stop")
+colnames(cov)[1:3] <- c("Chr","Start","Stop")
 cov[is.na(cov)] <- 0
 cov <- dataframe2GRanges(cov)
 
