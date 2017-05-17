@@ -68,7 +68,7 @@ dataframe2GRanges <- function (df, keepColumns = TRUE, ignoreStrand = TRUE){
 }
 
 ####Loads coverage matrix & coerces to GRange
-cov <- read.table(path.to.matrix,header=T,sep="\t",stringsAsFactors=F)
+cov <- read.table(path.to.matrix,header=T,sep="\t",stringsAsFactors=F,comment.char="")
 cov[2:ncol(cov)] <- apply(cov[2:ncol(cov)],2,function(vals){
   return(as.numeric(as.character(vals)))
 })
