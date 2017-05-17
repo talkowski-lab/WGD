@@ -1,4 +1,4 @@
-#!/usr/bin/Rscript
+#!/usr/bin/env Rscript
 
 # Code copyright (c) 2017 Ryan L. Collins
 # Distributed under terms of the MIT License (see LICENSE)
