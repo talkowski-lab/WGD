@@ -194,12 +194,12 @@ def main():
         ncoverage.to_csv(args.norm_out, sep='\t', index=False, header=False)
         call(' '.join(['sort -Vk1,1 -k2,2n -o', args.norm_out, 
                         args.norm_out]), shell=True)
-    #Gzip if optioned
-    if args.gzip is True:
-        with open(args.norm_out, 'rb') as f_in, gzip.open(args.norm_out 
-            + '.gz', 'wb') as f_out:
-            shutil.copyfileobj(f_in, f_out)
-    os.remove(args.norm_out)
+        #Gzip if optioned
+        if args.gzip is True:
+            with open(args.norm_out, 'rb') as f_in, gzip.open(args.norm_out 
+                + '.gz', 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        os.remove(args.norm_out)
 
 
 #Main block
