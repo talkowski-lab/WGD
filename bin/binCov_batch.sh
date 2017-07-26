@@ -9,7 +9,7 @@
 usage(){
 cat <<EOF
 
-usage: binCov_batch.sh [-h] [-b BINSIZE] [-m MODE] [-n] 
+usage: binCov_batch.sh [-h] [-b BINSIZE] [-m MODE] [-n] [-z]
                        [-L CONTIGS] [-x BLACKLIST] [-v OVERLAP] 
                        BAM ID OUTDIR
 
@@ -25,6 +25,7 @@ Optional arguments:
   -b  BINSIZE      Bin size in bp (default: 1000)
   -m  MODE         Evaluate physical or nucleotide coverage (default: nucleotide)
   -n  NORMALIZED   Also generate normalized coverage values 
+  -z  GZIP         Attempt to tar & gzip the output directory
   -L  CONTIGS      List of contigs to evaluate (default: all contigs in bam header)
   -x  BLACKLIST    BED file of regions to ignore
   -v  OVERLAP      Maximum tolerated blacklist overlap before excluding bin
@@ -39,7 +40,8 @@ contigs=DEFAULT
 blist=NONE
 v=0.05
 norm=0
-while getopts ":b:m:nL:x:v:h" opt; do
+tgz=0
+while getopts ":b:m:nzL:x:v:h" opt; do
 	case "$opt" in
 		b)
 			binsize=${OPTARG}
@@ -49,6 +51,9 @@ while getopts ":b:m:nL:x:v:h" opt; do
 			;;
     n)
       norm=1
+      ;;
+    z)
+      tgz=1
       ;;
 		L)
 			contigs=${OPTARG}
@@ -76,6 +81,11 @@ if [ -z ${bam} ] || [ -z ${ID} ] || [ -z ${OUTDIR} ]; then
 	exit 0
 fi
 
+#Create output directory if it doesn't exist
+if ! [ -e ${OUTDIR} ]; then
+  mkdir ${OUTDIR}
+fi
+
 #Determine list of contigs to use (note: requires samtools)
 if [ ${contigs} == "DEFAULT" ]; then
 	contigs_list=mktemp
@@ -91,7 +101,7 @@ spath=$( dirname $( readlink -f $0 ) )
 echo ${spath}
 while read contig; do
 	if [ ${blist} != "NONE" ]; then
-    if [ ${norm} == 1 ]; then
+    if [ ${norm} -eq 1 ]; then
   		${spath}/binCov.py \
       -n ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.normCov.bed \
       -b ${binsize} \
@@ -112,7 +122,7 @@ while read contig; do
       ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed
     fi
 	else
-    if [ ${norm} == 1 ]; then
+    if [ ${norm} -eq 1 ]; then
       ${spath}/binCov.py \
       -n ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.normCov.bed \
       -b ${binsize} \
@@ -132,3 +142,9 @@ while read contig; do
     fi
 	fi
 done < ${contigs_list}
+
+#Tar & gzip output if optioned
+if [ ${tgz} -eq 1 ]; then
+  OUTDIR=$( echo ${OUTDIR} sed 's/\/$//g' )
+  tar -czvf ${OUTDIR}.tar.gz ${OUTDIR}
+fi
