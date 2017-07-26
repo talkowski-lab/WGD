@@ -1,0 +1,13 @@
+{
+    "path" : "~/Desktop/Collins/Talkowski/code/WGD/WGDR",
+    "sortOrder" : [
+        {
+            "ascending" : false,
+            "columnIndex" : 4
+        },
+        {
+            "ascending" : true,
+            "columnIndex" : 2
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "\n#Load library\nrequire(WGDR)\n\n#Set params\noptions(scipen=6)\nWRKDIR <- \"/Users/collins/Desktop/RCollins/Talkowski_Local/NGS/Methods/WGS_Dosage_Anomalies/WGDosage_Analysis_Fall2016/\"\n\n#Load fingerprint\nfp.full <- read.table(\"/Users/collins/Desktop/RCollins/Talkowski_Local/NGS/Methods/WGS_Dosage_Anomalies/WGDosage_Analysis_Fall2016/fingerprint_refinement/fptest/TEST.fingerprint_full.bed\",header=T)\n\n#Load training sets\nBLUE <- merge(WGD.matrix.tranche(WGD.matrix.read(paste(WRKDIR,\"test/BLUE_TRAIN.1.normCov.10kb.matrix.bed.gz\",sep=\"\")),tranche=0.98)$res,fp.full[,1:3],sort=F)\nRED <- merge(WGD.matrix.tranche(WGD.matrix.read(paste(WRKDIR,\"test/RED_TRAIN.1.normCov.10kb.matrix.bed.gz\",sep=\"\")),tranche=0.98)$res,fp.full[,1:3],sort=F)\n\n#Merge training sets\nALL <- merge(BLUE,RED,sort=F)\n\n#Reset fingerprint to bins in ALL\nfp.full <- merge(fp.full,ALL[,1:3],sort=F)\n\n#Assign fingerprint bins to blue or red\nfp.full$color <- sapply(fp.full$dAB,function(val){\n  if(val>0){\n    return(\"blue\")\n  }else{\n    return(\"red\")\n  }\n})\n\n#Gather average deviance per sample for blue and red bins\ncolored.means <- as.data.frame(t(apply(ALL[,-c(1:3)],2,function(vals){\n  blue <- mean(vals[which(fp.full$color==\"blue\")])\n  red <- mean(vals[which(fp.full$color==\"red\")])\n  return(c(blue,red,mean(c(abs(blue),abs(red))),max(c(abs(blue),abs(red))),blue-red))\n})))\nnames(colored.means) <- c(\"blue\",\"red\",\"mag\",\"max\",\"score\")\ncolored.means <- colored.means[rev(order(colored.means$score)),]\n\n#Write order of training set libraries\nwrite.table(rownames(colored.means),paste(WRKDIR,\"training_set.ordered.txt\",sep=\"\"),col.names=F,row.names=F,quote=F)\n\n#Read annotation bins\nMPGDIR <- \"/Users/collins/Desktop/RCollins/Talkowski_Local/NGS/Methods/WGS_Dosage_Anomalies/WGDosage_Analysis_Fall2016/MPG_plots/\"\nANNO <- read.table(paste(MPGDIR,\"all_annotations.10kb_matrix.bed\",sep=\"\"),header=T,comment.char=\"\")\nGC <- ANNO[,c(1:3,8)]\n\n#Join annotations and fp.full\nfp.full.anno <- merge(fp.full,ANNO,sort=F,by=1:3)\n#Subset to chr1\nfp.full.anno.chr1 <- fp.full.anno[which(fp.full.anno[,1]==1),]\n\n#Test plot GC vs dAB\nplot(fp.full.anno$dAB,fp.full.anno$GC)\n\n\n\n",
+    "created" : 1480091998759.000,
+    "dirty" : true,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "1553417082",
+    "id" : "DF102462",
+    "lastKnownWriteTime" : 6,
+    "last_content_update" : 1489506330247,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled3"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
