@@ -102,7 +102,7 @@ while read contig; do
   #Concatenate command line options
   binCovOptions=$( echo -e "-z -b ${binsize} -m ${mode} -v ${v} ${bam} ${contig} \
                             ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed" )
-  if ! [ ${norm} -eq 1 ]; then
+  if [ ${norm} -eq 1 ]; then
     binCovOptions=$( echo -e "-n ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.normCov.bed ${binCovOptions}" )
   fi
   if ! [ ${blist} == "NONE" ]; then
