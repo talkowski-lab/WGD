@@ -99,51 +99,21 @@ fi
 #Run binCov.py on all contigs
 spath=$( dirname $( readlink -f $0 ) )
 while read contig; do
-	if [ ${blist} != "NONE" ]; then
-    if [ ${norm} -eq 1 ]; then
-  		${spath}/binCov.py \
-      -n ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.normCov.bed \
-      -b ${binsize} \
-      -m ${mode} \
-      -x ${blist} \
-      -v ${v} \
-      ${bam} \
-      ${contig} \
-      ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed
-    else
-      ${spath}/binCov.py \
-      -b ${binsize} \
-      -m ${mode} \
-      -x ${blist} \
-      -v ${v} \
-      ${bam} \
-      ${contig} \
-      ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed
-    fi
-	else
-    if [ ${norm} -eq 1 ]; then
-      ${spath}/binCov.py \
-      -n ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.normCov.bed \
-      -b ${binsize} \
-      -m ${mode} \
-      -v ${v} \
-      ${bam} \
-      ${contig} \
-      ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed
-    else
-      ${spath}/binCov.py \
-      -b ${binsize} \
-      -m ${mode} \
-      -v ${v} \
-      ${bam} \
-      ${contig} \
-      ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed
-    fi
-	fi
+  #Concatenate command line options
+  binCovOptions=$( echo -e "-z -b ${binsize} -m ${mode} -v ${v} ${bam} ${contig} \
+                            ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed" )
+  if ! [ ${norm} -eq 1 ]; then
+    binCovOptions=$( echo -e "-n ${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.normCov.bed ${binCovOptions}" )
+  fi
+  if ! [ ${blist} == "NONE" ]; then
+    binCovOptions=$( echo -e "-x ${blist} ${binCovOptions}" )
+  fi
+  #Run binCov
+  ${spath}/binCov.py ${binCovOptions}
 done < ${contigs_list}
 
 #Tar & gzip output if optioned
 if [ ${tgz} -eq 1 ]; then
-  OUTDIR=$( echo ${OUTDIR} | sed 's/\/$//g' )
-  tar -czvf ${OUTDIR}.tar.gz ${OUTDIR}
+  OUTDIR_name=$( echo ${OUTDIR} | sed 's/\/$//g' | sed 's/\//\t/g' | awk '{ print $NF }' )
+  cd ${OUTDIR}/../; tar -czvf ${OUTDIR_name}.tar.gz ${OUTDIR_name}
 fi
