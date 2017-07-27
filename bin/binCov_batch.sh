@@ -98,7 +98,6 @@ fi
 
 #Run binCov.py on all contigs
 spath=$( dirname $( readlink -f $0 ) )
-echo ${spath}
 while read contig; do
 	if [ ${blist} != "NONE" ]; then
     if [ ${norm} -eq 1 ]; then
@@ -145,6 +144,6 @@ done < ${contigs_list}
 
 #Tar & gzip output if optioned
 if [ ${tgz} -eq 1 ]; then
-  OUTDIR=$( echo ${OUTDIR} sed 's/\/$//g' )
+  OUTDIR=$( echo ${OUTDIR} | sed 's/\/$//g' )
   tar -czvf ${OUTDIR}.tar.gz ${OUTDIR}
 fi
