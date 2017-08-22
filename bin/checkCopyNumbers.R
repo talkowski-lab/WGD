@@ -85,7 +85,7 @@ normalizeContigsPerMatrix <- function(dat,exclude=NA,scale.exclude=NA,
 #######################################################################
 #####Helper function to test each contig per sample for evidence of CNA
 #######################################################################
-testCNs <- function(dat){
+testCNs <- function(dat,FDR=T){
   dat.out <- dat
 
   #Iterate over contigs
@@ -99,6 +99,11 @@ testCNs <- function(dat){
     })
     return(pvals)
   }))
+
+  #FDR correct all p-values (if optioned)
+  if(FDR==T){
+    dat.out[,-1] <- apply(pvals[,-1],2,p.adjust,method="fdr")
+  }
 
   #Return
   return(dat.out)
@@ -181,7 +186,7 @@ assignSex <- function(dat,sexChr=24:25,
 
     #Add legend
     legend("topright",bg="white",legend=sexLabs,
-           pch=c(19,19),col=sexColors,cex=2)
+           pch=c(19,19),col=sexColors,pt.cex=2)
   }
 
   #Return sex assignments
@@ -193,17 +198,14 @@ assignSex <- function(dat,sexChr=24:25,
 ###############################################################
 boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
                               contigLabels=paste("chr",c(1:22,"X","Y"),sep=""),
-                              colorSignif=T){
+                              colorSignif=T,connect=F){
   #Load library
   require(beeswarm)
 
   #Create plot color dataframe
   if(colorSignif==T){
     #Calculate p-values
-    pvals <- testCNs(dat)
-
-    #FDR correct all p-values
-    pvals[,-1] <- apply(pvals[,-1],2,p.adjust,method="fdr")
+    pvals <- testCNs(dat,FDR=T)
 
     #Iterate over pvalue matrix & compute plot color
     colMat <- sapply(2:ncol(pvals),function(col){
@@ -244,23 +246,41 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
   #Add gridlines
   abline(h=seq(0,ymax,0.5),lty=2,col="gray85")
   abline(h=0:ymax,col="gray80")
-  abline(h=c(0,ploidy))
+  abline(h=c(0,genome.ploidy))
 
-  #Iterate over contigs and plot violins & jitters
+  #Iterate over contigs and plot all data
+  if(connect==T){
+    apply(dat[,-1],1,function(vals){
+      points(x=(1:(ncol(dat)-1))-0.5,
+             y=as.numeric(vals),type="l",
+             col="gray80",lwd=0.4)
+    })
+  }
   sapply(1:(ncol(dat)-1),function(i){
-    #Jitter
-    points(x=jitter(rep(i-0.5,times=nrow(dat)),amount=0.3),y=dat[,i+1],
-           pch=19,col=colMat[,i],cex=0.25)
-    # #Swarm
-    # beeswarm(dat[,i+1],add=T,at=i-0.5,method="swarm",
-    #          corral="wrap",corralWidth=0.6,
-    #          pch=19,pwcol=colMat[,i],cex=0.2)
+    if(connect==F){
+      # #Jitter
+      # points(x=jitter(rep(i-0.5,times=nrow(dat)),amount=0.3),y=dat[,i+1],
+      #        pch=19,col=colMat[,i],cex=0.25)
+      #Swarm
+      beeswarm(dat[,i+1],add=T,at=i-0.5,method="swarm",
+               corral="wrap",corralWidth=0.6,
+               pch=19,pwcol=colMat[,i],cex=0.2)
+    }else{
+      points(x=rep(i-0.5,times=nrow(dat)),y=dat[,i+1],
+             pch=19,col=colMat[,i],cex=0.25)
+    }
   })
 
   #Add boxplots
-  boxplot(dat[,-c(1,exclude)],at=(1:(ncol(dat)-1))[-c(exclude-1)]-0.5,
-          add=T,outline=F,col=NA,lwd=0.75,lty=1,staplewex=0,
-          yaxt="n",xaxt="n",ylab="",xlab="")
+  if(!is.na(exclude)){
+    boxplot(dat[,-c(1,exclude)],at=(1:(ncol(dat)-1))[-c(exclude-1)]-0.5,
+            add=T,outline=F,col=NA,lwd=0.75,lty=1,staplewex=0,
+            yaxt="n",xaxt="n",ylab="",xlab="")
+  }else{
+    boxplot(dat[,-1],at=(1:(ncol(dat)-1))-0.5,
+            add=T,outline=F,col=NA,lwd=0.75,lty=1,staplewex=0,
+            yaxt="n",xaxt="n",ylab="",xlab="")
+  }
 
   #Add x-axis labels
   axis(1,at=(1:length(contigLabels))-0.5,tick=F,line=-0.8,las=2,labels=contigLabels)
@@ -274,7 +294,6 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
   rect(xleft=par("usr")[1],xright=par("usr")[2],
        ybottom=par("usr")[3],ytop=par("usr")[4],
        col=NA,border="black",lwd=2)
-
 }
 
 ##########################
@@ -329,24 +348,31 @@ dat.females <- dat[c(sex.females,sex.NAs.second),]
 males.norm <- normalizeContigsPerMatrix(dat.males,exclude=24:25,scale.exclude=NA,
                                         genome.ploidy=2,contig.ploidy=c(rep(2,22),1,1))
 females.norm <- normalizeContigsPerMatrix(dat.females,exclude=24:25,scale.exclude=NA,
-                                        genome.ploidy=2,contig.ploidy=c(rep(2,22),2,0))
+                                          genome.ploidy=2,contig.ploidy=c(rep(2,22),2,0))
 
 
-#Plot CN per contig - Males & Females separately
-png(paste(OUTDIR,"/estimated_CN_per_contig.males_only.png",sep=""),
+#Plot CN per contig - Males
+png(paste(OUTDIR,"/estimated_CN_per_contig.males_only.with_contours.png",sep=""),
     height=1250,width=2500,res=300)
-boxplotsPerContig(males.norm,exclude=NA)
+boxplotsPerContig(males.norm,exclude=NA,contig.ploidy=c(rep(2,22),1,1),connect=T)
 dev.off()
-png(paste(OUTDIR,"/estimated_CN_per_contig.females_only.png",sep=""),
+png(paste(OUTDIR,"/estimated_CN_per_contig.males_only.no_contours.png",sep=""),
     height=1250,width=2500,res=300)
-boxplotsPerContig(females.norm,exclude=NA)
+boxplotsPerContig(males.norm,exclude=NA,contig.ploidy=c(rep(2,22),1,1),connect=F)
 dev.off()
 
-#Plots boxplots per contig
-png(paste(OUTDIR,"/estimated_CN_per_contig.png",sep=""),
+#Plot CN per contig - Females
+png(paste(OUTDIR,"/estimated_CN_per_contig.females_only.with_contours.png",sep=""),
     height=1250,width=2500,res=300)
-boxplotsPerContig(dat.norm,exclude=24:25)
+boxplotsPerContig(females.norm,exclude=NA,contig.ploidy=c(rep(2,22),2,0),connect=T)
 dev.off()
+png(paste(OUTDIR,"/estimated_CN_per_contig.females_only.no_contours.png",sep=""),
+    height=1250,width=2500,res=300)
+boxplotsPerContig(females.norm,exclude=NA,contig.ploidy=c(rep(2,22),2,0),connect=F)
+dev.off()
+
+#Recombine independently normalized data by sex & reassign sexes
+merged.norm <- rbind(males.norm,females.norm)
 
 #Plots sex assignment dotplot
 png(paste(OUTDIR,"/sex_assignments.png",sep=""),
@@ -354,8 +380,40 @@ png(paste(OUTDIR,"/sex_assignments.png",sep=""),
 sexes <- assignSex(dat.norm)
 dev.off()
 
+#Write table of sexes
+sexes <- data.frame("ID"=names(sexes),"SEX"=sexes)
+sexes <- sexes[match(dat$ID,sexes$ID),]
+colnames(sexes)[1] <- "#ID"
+write.table(sexes,paste(OUTDIR,"/sample_sex_assignments.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
 
+#Generate p-values, q-values, and rounded CNs for males/females
+males.p <- testCNs(males.norm,FDR=F)
+males.q <- testCNs(males.norm,FDR=T)
+males.CN <- males.norm
+males.CN[,-1] <- apply(males.CN[,-1],2,round,digits=2)
+females.p <- testCNs(females.norm,FDR=F)
+females.q <- testCNs(females.norm,FDR=T)
+females.CN <- females.norm
+females.CN[,-1] <- apply(females.CN[,-1],2,round,digits=2)
 
+#Merge male/female p-values and rounded CNs
+merged.p <- rbind(males.p,females.p)
+merged.p <- merged.p[match(dat$ID,merged.p$ID),]
+colnames(merged.p) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_pValue",sep=""))
+merged.q <- rbind(males.q,females.q)
+merged.q <- merged.q[match(dat$ID,merged.q$ID),]
+colnames(merged.q) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_qValue",seq=""))
+merged.CN <- rbind(males.CN,females.CN)
+merged.CN <- merged.CN[match(dat$ID,merged.CN$ID),]
+colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
 
+#Write merged p-values and rounded CNs to file
+write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
 
 
