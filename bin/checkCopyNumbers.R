@@ -24,7 +24,7 @@ readMatrix <- function(INFILE){
 #############################################################
 #####Helper function to normalize contigs for a single sample
 #############################################################
-normalizeContigsPerSample <- function(vals,exclude){
+normalizeContigsPerSample <- function(vals,exclude=NA,ploidy){
   #Convert vals to numeric
   vals <- as.numeric(vals)
 
@@ -37,6 +37,9 @@ normalizeContigsPerSample <- function(vals,exclude){
     return(vals[i]/excl.mean)
   })
 
+  #Scale to expected ploidy
+  newVals <- ploidy*newVals
+
   #Return normalized values
   return(newVals)
 }
@@ -44,26 +47,61 @@ normalizeContigsPerSample <- function(vals,exclude){
 #########################################################################
 #####Helper function to normalize contigs for an entire matrix of samples
 #########################################################################
-normalizeContigsPerMatrix <- function(dat,exclude,ploidy=2){
+normalizeContigsPerMatrix <- function(dat,exclude=NA,scale.exclude=NA,
+                                      genome.ploidy=2,contig.ploidy){
   #Iterate over samples & normalize
-  dat[,-1] <- ploidy*t(apply(dat[,-1],1,normalizeContigsPerSample,exclude=exclude-1))
+  suppressWarnings(if(is.na(exclude)){
+    dat[,-1] <- t(apply(dat[,-1],1,normalizeContigsPerSample,genome.ploidy))
+  }else{
+    dat[,-1] <- t(apply(dat[,-1],1,normalizeContigsPerSample,exclude=exclude-1,genome.ploidy))
+  })
 
-  #Scale sd to sd of first 12 chromosomes
-  sd.others <- sd(unlist(dat[,2:13]),na.rm=T)
+  #Scale mad to mad of first 12 chromosomes
+  mad.others <- mad(unlist(dat[,2:13]),na.rm=T)
 
-  #Iterate over contigs (minus excluded) and scale
-  scaledVals <- sapply(setdiff(2:ncol(dat),exclude),function(i){
+  #Iterate over contigs (minus scale.exclude) and scale
+  scaledVals <- sapply(setdiff(2:ncol(dat),scale.exclude),function(i){
     #Calculate & apply adjustments
-    mean.adjust <- mean(dat[,i],na.rm=T)-ploidy
-    newvals <- dat[,i]-mean.adjust
-    sd.adjust <- sd.others/sd(dat[,i],na.rm=T)
-    newvals <- 2+((newvals-2)*sd.adjust)
+    median.adjust <- median(dat[,i],na.rm=T)-contig.ploidy[i-1]
+    newvals <- dat[,i]-median.adjust
     return(newvals)
   })
-  dat[,-c(1,exclude)] <- scaledVals
+  suppressWarnings(if(is.na(scale.exclude)){
+    dat[,-1] <- scaledVals
+  }else{
+    dat[,-c(1,scale.exclude)] <- scaledVals
+  })
+
+  #Round up values that were normalized below zero
+  dat[,-1] <- apply(dat[,-1],2,function(vals){
+    vals[which(vals<0 & !is.na(vals))] <- 0
+    return(vals)
+  })
 
   #Return transformed data
   return(dat)
+}
+
+#######################################################################
+#####Helper function to test each contig per sample for evidence of CNA
+#######################################################################
+testCNs <- function(dat){
+  dat.out <- dat
+
+  #Iterate over contigs
+  left.p <- apply((apply(dat[,-1],2,scale,center=T,scale=T)),2,pnorm)
+  right.p <- apply((apply(dat[,-1],2,scale,center=T,scale=T)),2,pnorm,lower.tail=F)
+
+  #Choose minimum p-value between left and right tails
+  dat.out[,-1] <- t(sapply(1:nrow(left.p),function(row){
+    pvals <- sapply(1:ncol(left.p),function(col){
+      return(min(left.p[row,col],right.p[row,col],na.rm=T))
+    })
+    return(pvals)
+  }))
+
+  #Return
+  return(dat.out)
 }
 
 ###########################################
@@ -111,86 +149,84 @@ assignSex <- function(dat,sexChr=24:25,
   names(sexes) <- dat[,1]
 
   #####Plot sex assignments
-  #Prepare plot area
-  par(mar=c(3.5,3.5,0.5,0.5))
-  plot(x=c(0,axLim),y=c(0,axLim),type="n",
-       xlab="",ylab="",xaxt="n",yaxt="n")
+  if(plot==T){
+    #Prepare plot area
+    par(mar=c(3.5,3.5,0.5,0.5))
+    plot(x=c(0,axLim),y=c(0,axLim),type="n",
+         xlab="",ylab="",xaxt="n",yaxt="n")
 
-  #Add grid lines
-  abline(h=0:axLim,v=0:axLim,lty=3,col="gray50")
+    #Add grid lines
+    abline(h=0:axLim,v=0:axLim,lty=3,col="gray50")
 
-  #Get color vector
-  colVect <- as.vector(unlist(sapply(sexes,function(sex){
-    if(is.na(sex)){
-      col=NA
-    }else{
-      col <- sexColors[which(sexLabs==sex)]
-    }
-    return(col)
-  })))
+    #Get color vector
+    colVect <- as.vector(unlist(sapply(sexes,function(sex){
+      if(is.na(sex)){
+        col=NA
+      }else{
+        col <- sexColors[which(sexLabs==sex)]
+      }
+      return(col)
+    })))
 
-  #Plot points
-  points(dat[,sexChr],pch=19,col=colVect,cex=0.5)
+    #Plot points
+    points(dat[,sexChr],pch=19,col=colVect,cex=0.5)
 
-  #Add x-axis
-  axis(1,at=0:axLim)
-  mtext(1,line=2.2,text="chrX Copy Number")
+    #Add x-axis
+    axis(1,at=0:axLim)
+    mtext(1,line=2.2,text="chrX Copy Number")
 
-  #Add y-axis
-  axis(2,at=0:axLim,las=2)
-  mtext(2,line=2.2,text="chrY Copy Number")
+    #Add y-axis
+    axis(2,at=0:axLim,las=2)
+    mtext(2,line=2.2,text="chrY Copy Number")
 
-  #Add legend
-  legend("topright",bg="white",legend=sexLabs,
-         pch=c(19,19),col=sexColors,cex=2)
+    #Add legend
+    legend("topright",bg="white",legend=sexLabs,
+           pch=c(19,19),col=sexColors,cex=2)
+  }
 
   #Return sex assignments
   return(sexes)
 }
 
-# ########################################
-# #####Helper function to calculate CN fit
-# ########################################
-# fitCN <- function(dat,exclude){
-#   #Exclude incomplete entries
-#   sample.exclude <- unlist(sapply(1:nrow(dat),function(i){
-#     if(all(is.na(dat[i,-1]))){
-#       return(i)
-#     }
-#   }))
-#   dat.mod <- dat[-sample.exclude,-c(1,exclude)]
-#   if(nrow(dat)!=nrow(dat.mod)){
-#     warning(paste(nrow(dat)-nrow(dat.mod),
-#                   " samples had no coverage information and were excluded from CN modeling.",
-#                   sep=""))
-#   }
-#
-#   #Compute PCs
-#   PCs <- prcomp(dat.mod,retx=T)
-#
-#   #Bind first 10 PCs to dat
-#   dat.mod <- cbind(dat.mod,PCs$x[,1:10])
-#
-#   #Iterate over remaining contigs and fit linear model
-#   sapply(1:(ncol(dat.mod)-10),function(i){
-#     #Fit linear model
-#     fit <- lm(as.formula(paste(colnames(dat.mod)[i],"~",
-#                         paste(colnames(dat.mod)[-i],
-#                               collapse="+"),sep = "")),
-#        dat=dat.mod)
-#     #Calculate fits on full data
-#     fit.vals <- predict.lm(fit,dat.mod)
-#   })
-#
-# }
-
 ###############################################################
 #####Helper function to plot distribution of samples per contig
 ###############################################################
-boxplotsPerContig <- function(dat,ploidy=2,exclude,
-                              contigLabels=paste("chr",c(1:22,"X","Y"),sep="")){
+boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
+                              contigLabels=paste("chr",c(1:22,"X","Y"),sep=""),
+                              colorSignif=T){
   #Load library
   require(beeswarm)
+
+  #Create plot color dataframe
+  if(colorSignif==T){
+    #Calculate p-values
+    pvals <- testCNs(dat)
+
+    #FDR correct all p-values
+    pvals[,-1] <- apply(pvals[,-1],2,p.adjust,method="fdr")
+
+    #Iterate over pvalue matrix & compute plot color
+    colMat <- sapply(2:ncol(pvals),function(col){
+      sapply(1:nrow(pvals),function(row){
+        if(is.na(pvals[row,col])){
+          return(NA)
+        }else{
+          if(pvals[row,col]<0.05){
+            if(dat[row,col]>contig.ploidy[col-1]){
+              return("blue")
+            }else{
+              return("red")
+            }
+          }else{
+            return("#838393")
+          }
+        }
+      })
+    })
+  }else{
+    colMat <- dat[,-1]
+    colMat <- "#838393"
+  }
 
   #Get max y-value
   ymax <- max(4,max(dat[,-1],na.rm=T))
@@ -214,12 +250,11 @@ boxplotsPerContig <- function(dat,ploidy=2,exclude,
   sapply(1:(ncol(dat)-1),function(i){
     #Jitter
     points(x=jitter(rep(i-0.5,times=nrow(dat)),amount=0.3),y=dat[,i+1],
-           pch=19,col="#3e68ad",cex=0.25)
+           pch=19,col=colMat[,i],cex=0.25)
     # #Swarm
     # beeswarm(dat[,i+1],add=T,at=i-0.5,method="swarm",
     #          corral="wrap",corralWidth=0.6,
-    #          pch=19,col="#3e68ad",cex=0.2)
-
+    #          pch=19,pwcol=colMat[,i],cex=0.2)
   })
 
   #Add boxplots
@@ -234,6 +269,12 @@ boxplotsPerContig <- function(dat,ploidy=2,exclude,
   #Add y-axis labels
   axis(2,at=0:ymax,las=2)
   mtext(2,text="Estimated Copy Number",line=2.2)
+
+  #Add border cleanup
+  rect(xleft=par("usr")[1],xright=par("usr")[2],
+       ybottom=par("usr")[3],ytop=par("usr")[4],
+       col=NA,border="black",lwd=2)
+
 }
 
 ##########################
@@ -269,18 +310,48 @@ if(length(args$args) != 1){
 dat <- readMatrix(INFILE)
 
 #Transforms data to predicted copy numbers
-dat <- normalizeContigsPerMatrix(dat,exclude=24:25,ploidy=2)
+dat.norm <- normalizeContigsPerMatrix(dat,exclude=24:25,scale.exclude=24:25,
+                                      genome.ploidy=2,contig.ploidy=rep(2,24))
+
+#Assign sexes
+sexes <- assignSex(dat.norm,plot=F)
+
+#Split data by sex & evenly distribute NAs among M & F
+sex.males <- as.vector(which(sexes=="MALE"))
+sex.females <- as.vector(which(sexes=="FEMALE"))
+sex.NAs <- as.vector(which(is.na(sexes)))
+sex.NAs.first <- sex.NAs[1:floor((length(sex.NAs)/2))]
+sex.NAs.second <- sex.NAs[floor((length(sex.NAs)/2)):length(sex.NAs)]
+dat.males <- dat[c(sex.males,sex.NAs.first),]
+dat.females <- dat[c(sex.females,sex.NAs.second),]
+
+#Normalize CN - males & females separately
+males.norm <- normalizeContigsPerMatrix(dat.males,exclude=24:25,scale.exclude=NA,
+                                        genome.ploidy=2,contig.ploidy=c(rep(2,22),1,1))
+females.norm <- normalizeContigsPerMatrix(dat.females,exclude=24:25,scale.exclude=NA,
+                                        genome.ploidy=2,contig.ploidy=c(rep(2,22),2,0))
+
+
+#Plot CN per contig - Males & Females separately
+png(paste(OUTDIR,"/estimated_CN_per_contig.males_only.png",sep=""),
+    height=1250,width=2500,res=300)
+boxplotsPerContig(males.norm,exclude=NA)
+dev.off()
+png(paste(OUTDIR,"/estimated_CN_per_contig.females_only.png",sep=""),
+    height=1250,width=2500,res=300)
+boxplotsPerContig(females.norm,exclude=NA)
+dev.off()
 
 #Plots boxplots per contig
 png(paste(OUTDIR,"/estimated_CN_per_contig.png",sep=""),
     height=1250,width=2500,res=300)
-boxplotsPerContig(dat,exclude=24:25)
+boxplotsPerContig(dat.norm,exclude=24:25)
 dev.off()
 
 #Plots sex assignment dotplot
 png(paste(OUTDIR,"/sex_assignments.png",sep=""),
     height=1500,width=1500,res=300)
-sexes <- assignSex(dat)
+sexes <- assignSex(dat.norm)
 dev.off()
 
 
