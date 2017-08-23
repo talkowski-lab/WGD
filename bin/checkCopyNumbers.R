@@ -505,39 +505,38 @@ png(paste(OUTDIR,"/sex_assignments.png",sep=""),
 sexes <- assignSex(merged.norm,sexAssign.df=sexAssign.df)
 dev.off()
 
-# #Write table of sexes
-# sexes <- data.frame("ID"=names(sexes),"SEX"=sexes)
-# sexes <- sexes[match(dat$ID,sexes$ID),]
-# colnames(sexes)[1] <- "#ID"
-# write.table(sexes,paste(OUTDIR,"/sample_sex_assignments.txt",sep=""),
-#             col.names=T,row.names=F,sep="\t",quote=F)
-#
-# #Generate p-values, q-values, and rounded CNs for males/females
-# males.p <- testCNs(males.norm,FDR=F)
-# males.q <- testCNs(males.norm,FDR=T)
-# males.CN <- males.norm
-# males.CN[,-1] <- apply(males.CN[,-1],2,round,digits=2)
-# females.p <- testCNs(females.norm,FDR=F)
-# females.q <- testCNs(females.norm,FDR=T)
-# females.CN <- females.norm
-# females.CN[,-1] <- apply(females.CN[,-1],2,round,digits=2)
-#
-# #Merge male/female p-values and rounded CNs
-# merged.p <- rbind(males.p,females.p)
-# merged.p <- merged.p[match(dat$ID,merged.p$ID),]
-# colnames(merged.p) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_pValue",sep=""))
-# merged.q <- rbind(males.q,females.q)
-# merged.q <- merged.q[match(dat$ID,merged.q$ID),]
-# colnames(merged.q) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_qValue",sep=""))
-# merged.CN <- rbind(males.CN,females.CN)
-# merged.CN <- merged.CN[match(dat$ID,merged.CN$ID),]
-# colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
-#
-# #Write merged p-values and rounded CNs to file
-# write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
-#             col.names=T,row.names=F,sep="\t",quote=F)
-# write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
-#             col.names=T,row.names=F,sep="\t",quote=F)
-# write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
-#             col.names=T,row.names=F,sep="\t",quote=F)
+#Write table of sexes
+sexes <- sexes[match(dat$ID,sexes$ID),]
+colnames(sexes)[1] <- "#ID"
+write.table(sexes,paste(OUTDIR,"/sample_sex_assignments.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+
+#Generate p-values, q-values, and rounded CNs for males/females
+males.p <- testCNs(males.norm,FDR=F)
+males.q <- testCNs(males.norm,FDR=T)
+males.CN <- males.norm
+males.CN[,-1] <- apply(males.CN[,-1],2,round,digits=2)
+females.p <- testCNs(females.norm,FDR=F)
+females.q <- testCNs(females.norm,FDR=T)
+females.CN <- females.norm
+females.CN[,-1] <- apply(females.CN[,-1],2,round,digits=2)
+
+#Merge male/female p-values and rounded CNs
+merged.p <- rbind(males.p,females.p)
+merged.p <- merged.p[match(dat$ID,merged.p$ID),]
+colnames(merged.p) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_pValue",sep=""))
+merged.q <- rbind(males.q,females.q)
+merged.q <- merged.q[match(dat$ID,merged.q$ID),]
+colnames(merged.q) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_qValue",sep=""))
+merged.CN <- rbind(males.CN,females.CN)
+merged.CN <- merged.CN[match(dat$ID,merged.CN$ID),]
+colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
+
+#Write merged p-values and rounded CNs to file
+write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
 
