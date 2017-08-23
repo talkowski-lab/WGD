@@ -340,21 +340,21 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
             segments(x0=j-0.5,x1=j+0.5,
                      y0=as.numeric(vals[j]),
                      y1=as.numeric(vals[j+1]),
-                     col=cols[j],lwd=0.4)
+                     col="gray80",lwd=0.4)
           }else if(j==length(vals)){
             segments(x0=j-1.5,x1=j-0.5,
                      y0=as.numeric(vals[j-1]),
                      y1=as.numeric(vals[j]),
-                     col=cols[j],lwd=0.4)
+                     col="gray80",lwd=0.4)
           }else{
             segments(x0=j-1.5,x1=j-0.5,
                      y0=as.numeric(vals[j-1]),
                      y1=as.numeric(vals[j]),
-                     col=cols[j],lwd=0.4)
+                     col="gray80",lwd=0.4)
             segments(x0=j-0.5,x1=j+0.5,
                      y0=as.numeric(vals[j]),
                      y1=as.numeric(vals[j+1]),
-                     col=cols[j],lwd=0.4)
+                     col="gray80",lwd=0.4)
           }
         }
       })
