@@ -102,7 +102,7 @@ testCNs <- function(dat,FDR=T){
 
   #FDR correct all p-values (if optioned)
   if(FDR==T){
-    dat.out[,-1] <- apply(pvals[,-1],2,p.adjust,method="fdr")
+    dat.out[,-1] <- apply(dat.out[,-1],2,p.adjust,method="fdr")
   }
 
   #Return
@@ -113,14 +113,9 @@ testCNs <- function(dat,FDR=T){
 #####Helper function to assign & plot sexes
 ###########################################
 assignSex <- function(dat,sexChr=24:25,
-                      sexCNs=list(c(1,1),c(2,0)),
-                      sexLabs=c("MALE","FEMALE"),
-                      sexColors=c("#2777f7","#f027f7"),
+                      sexAssign.df, #four-column df: cn(X), cn(Y), label, color
+                      mosaicThresh="Bonferroni",
                       plot=T,axLim=3){
-  #Create data frame of expected sex CNs
-  sexCNs.df <- as.data.frame(t(matrix(unlist(sexCNs),ncol=length(sexChr))))
-  colnames(sexCNs.df) <- colnames(dat[,sexChr])
-
   #Exclude incomplete entries
   sample.exclude <- unlist(sapply(1:nrow(dat),function(i){
     if(any(is.na(dat[i,sexChr]))){
@@ -134,24 +129,77 @@ assignSex <- function(dat,sexChr=24:25,
                   sep=""))
   }
 
-  #Perform k-means clustering
-  set.seed(20)
-  clusters <- kmeans(x=dat.mod[,-1],centers=sexCNs.df)
+  #Round X & Y CN-types to nearest whole integer
+  dat.mod.rounded <- dat.mod
+  dat.mod.rounded[,-1] <- apply(dat.mod[,-1],2,round,digits=0)
 
   #Create output data frame with sex assignments
-  sexes <- sapply(1:nrow(dat),function(i){
-    #Get sex assignment
-    if(as.character(i) %in% names(clusters$cluster)){
-      cIdx <- clusters$cluster[which(names(clusters$cluster)==as.character(i))]
-      sex <- sexLabs[cIdx]
+  sexes <- as.data.frame(t(unlist(sapply(unique(dat[,1]),function(ID){
+    #Iterate over all IDs
+    if(ID %in% dat.mod[,1]){
+      #Get rounded CNs
+      CN.X <- round(dat.mod.rounded[which(dat.mod.rounded$ID==ID),2],0)
+      CN.Y <- round(dat.mod.rounded[which(dat.mod.rounded$ID==ID),3],0)
+
+      #Assign to existing sex copy-type, or "OTHER"
+      if(length(which(sexAssign.df$CN.X==CN.X & sexAssign.df$CN.Y==CN.Y))==1){
+        return(as.vector(c(ID,CN.X,CN.Y,
+                           sexAssign.df[which(sexAssign.df$CN.X==CN.X & sexAssign.df$CN.Y==CN.Y),3])))
+      }else{
+        return(as.vector(c(ID,CN.X,CN.Y,"OTHER")))
+      }
     }else{
-      sex <- NA
+      return(as.vector(c(ID,
+               dat[which(dat$ID==ID),sexChr[1]],
+               dat[which(dat$ID==ID),sexChr[2]],
+               NA)))
+    }
+  }))))
+  colnames(sexes) <- c("ID","chrX.CN","chrY.CN","Assignment")
+  rownames(sexes) <- 1:nrow(sexes)
+
+  #Gather sd of X and Y assignments from males
+  sd.X <- sd(dat.mod[which(sexes$Assignment[-sample.exclude]=="MALE"),2],na.rm=T)
+  sd.Y <- sd(dat.mod[which(sexes$Assignment[-sample.exclude]=="MALE"),3],na.rm=T)
+
+  #Run mosaic check per sample
+  pMosaic <- as.data.frame(t(unlist(apply(sexes,1,function(vals){
+    if(any(is.na(vals))){
+      pMos.X <- NA
+      pMos.Y <- NA
+    }else{
+      #Get raw CNs
+      CN.X <- dat.mod[which(dat.mod.rounded$ID==vals[1]),2]
+      CN.Y <- dat.mod[which(dat.mod.rounded$ID==vals[1]),3]
+
+      #Calculate p-value for chrX mosaicism
+      if(CN.X>as.numeric(vals[2])){
+        pMos.X <- pnorm(CN.X,mean=as.numeric(vals[2]),
+                        sd=sd.X*as.numeric(vals[2]),lower.tail=F)
+      }else{
+        pMos.X <- pnorm(CN.X,mean=as.numeric(vals[2]),
+                        sd=sd.X*as.numeric(vals[2]),lower.tail=T)
+      }
+
+      #Calculate p-value for chrY mosaicism
+      if(CN.Y>as.numeric(vals[3])){
+        pMos.Y <- pnorm(CN.Y,mean=as.numeric(vals[3]),
+                        sd=sd.Y*max(as.numeric(vals[3]),1),lower.tail=F)
+      }else{
+        pMos.Y <- pnorm(CN.Y,mean=as.numeric(vals[3]),
+                        sd=sd.Y*max(as.numeric(vals[3]),1),lower.tail=T)
+      }
     }
 
-    #Return info
-    return(sex)
-  })
-  names(sexes) <- dat[,1]
+    #Return p-values
+    return(c(pMos.X,pMos.Y))
+  }))))
+  colnames(pMosaic) <- c("pMos.X","pMos.Y")
+  pMosaic$qMos.X <- p.adjust(pMosaic$pMos.X,method="fdr")
+  pMosaic$qMos.Y <- p.adjust(pMosaic$pMos.Y,method="fdr")
+
+  #Add mosaic check to sexes output
+  sexes <- cbind(sexes,pMosaic)
 
   #####Plot sex assignments
   if(plot==T){
@@ -163,18 +211,43 @@ assignSex <- function(dat,sexChr=24:25,
     #Add grid lines
     abline(h=0:axLim,v=0:axLim,lty=3,col="gray50")
 
-    #Get color vector
-    colVect <- as.vector(unlist(sapply(sexes,function(sex){
-      if(is.na(sex)){
-        col=NA
-      }else{
-        col <- sexColors[which(sexLabs==sex)]
-      }
-      return(col)
-    })))
+    #Add sex karyotype labels behind each centroid
+    sexCNs.df <- data.frame("X"=rep(0:axLim,axLim+1),
+                            "Y"=as.vector(unlist(sapply(0:axLim,rep,times=axLim+1))))
+    sexCNs.df$karyo <- apply(sexCNs.df,1,function(vals){
+      return(paste(paste(rep("X",vals[1]),collapse=""),
+                   paste(rep("Y",vals[2]),collapse=""),
+                   sep=""))
+    })
+    text(x=sexCNs.df[,1],y=sexCNs.df[,2],
+         labels=sexCNs.df$karyo,
+         font=2,col="gray95",cex=0.8)
+
+    #Assign colors for sex plotting
+    if(mosaicThresh=="FDR"){
+      colVect <- apply(sexes[-sample.exclude,c(4,7:8)],1,function(vals){
+        if(min(as.numeric(vals[2:3]))<0.05){
+          return("#53edd0")
+        }else if(vals[1] %in% sexAssign.df$label){
+          return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
+        }else{
+          return("#8F1336")
+        }
+      })
+    }else{
+      colVect <- apply(sexes[-sample.exclude,c(4:6)],1,function(vals){
+        if(min(as.numeric(vals[2:3]))<0.05/nrow(dat.mod)){
+          return("#53edd0")
+        }else if(vals[1] %in% sexAssign.df$label){
+          return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
+        }else{
+          return("#8F1336")
+        }
+      })
+    }
 
     #Plot points
-    points(dat[,sexChr],pch=19,col=colVect,cex=0.5)
+    points(dat.mod[,-1],pch=19,col=colVect,cex=0.5)
 
     #Add x-axis
     axis(1,at=0:axLim)
@@ -185,8 +258,16 @@ assignSex <- function(dat,sexChr=24:25,
     mtext(2,line=2.2,text="chrY Copy Number")
 
     #Add legend
-    legend("topright",bg="white",legend=sexLabs,
-           pch=c(19,19),col=sexColors,pt.cex=2)
+    legendLabs <- apply(sexAssign.df[,1:3],1,function(vals){
+      paste(vals[3]," (",
+            paste(rep("X",times=vals[1]),collapse=""),
+            paste(rep("Y",times=vals[2]),collapse=""),
+            ")",sep="")
+    })
+    legend("topright",bg="white",
+           legend=c(legendLabs,"MOSAIC","OTHER"),
+           pch=19,col=c(sexAssign.df$color,"#53edd0","#8F1336"),
+           cex=0.5,pt.cex=1)
   }
 
   #Return sex assignments
@@ -250,21 +331,44 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
 
   #Iterate over contigs and plot all data
   if(connect==T){
-    apply(dat[,-1],1,function(vals){
-      points(x=(1:(ncol(dat)-1))-0.5,
-             y=as.numeric(vals),type="l",
-             col="gray80",lwd=0.4)
+    sapply(1:nrow(dat),function(i){
+      vals <- dat[i,-1]
+      cols <- colMat[i,]
+      sapply(1:length(vals),function(j){
+        if(cols[j]!="#838393" & !is.na(cols[j])){
+          if(j==1){
+            segments(x0=j-0.5,x1=j+0.5,
+                     y0=as.numeric(vals[j]),
+                     y1=as.numeric(vals[j+1]),
+                     col=cols[j],lwd=0.4)
+          }else if(j==length(vals)){
+            segments(x0=j-1.5,x1=j-0.5,
+                     y0=as.numeric(vals[j-1]),
+                     y1=as.numeric(vals[j]),
+                     col=cols[j],lwd=0.4)
+          }else{
+            segments(x0=j-1.5,x1=j-0.5,
+                     y0=as.numeric(vals[j-1]),
+                     y1=as.numeric(vals[j]),
+                     col=cols[j],lwd=0.4)
+            segments(x0=j-0.5,x1=j+0.5,
+                     y0=as.numeric(vals[j]),
+                     y1=as.numeric(vals[j+1]),
+                     col=cols[j],lwd=0.4)
+          }
+        }
+      })
     })
   }
   sapply(1:(ncol(dat)-1),function(i){
     if(connect==F){
-      # #Jitter
-      # points(x=jitter(rep(i-0.5,times=nrow(dat)),amount=0.3),y=dat[,i+1],
-      #        pch=19,col=colMat[,i],cex=0.25)
-      #Swarm
-      beeswarm(dat[,i+1],add=T,at=i-0.5,method="swarm",
-               corral="wrap",corralWidth=0.6,
-               pch=19,pwcol=colMat[,i],cex=0.2)
+      #Jitter
+      points(x=jitter(rep(i-0.5,times=nrow(dat)),amount=0.3),y=dat[,i+1],
+             pch=19,col=colMat[,i],cex=0.25)
+      # #Swarm
+      # beeswarm(dat[,i+1],add=T,at=i-0.5,method="swarm",
+      #          corral="wrap",corralWidth=0.6,
+      #          pch=19,pwcol=colMat[,i],cex=0.2)
     }else{
       points(x=rep(i-0.5,times=nrow(dat)),y=dat[,i+1],
              pch=19,col=colMat[,i],cex=0.25)
@@ -289,6 +393,20 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
   #Add y-axis labels
   axis(2,at=0:ymax,las=2)
   mtext(2,text="Estimated Copy Number",line=2.2)
+
+  #Add text in top-left indicating number of samples
+  nSamp <- nrow(dat)
+  nSamp.hasNA <- length(unique(unlist(sapply(1:nrow(dat[,-1]),function(i){
+    if(any(is.na(dat[i,-1]))){
+      return(i)
+    }else{
+      return(NA)
+    }
+  }))))
+  text(x=par("usr")[1],y=0.975*ymax,
+       labels=paste("N=",prettyNum(nSamp,big.mark=",")," samples (",
+                    prettyNum(nSamp.hasNA,big.mark=",")," incomplete)",
+                    sep=""),pos=4)
 
   #Add border cleanup
   rect(xleft=par("usr")[1],xright=par("usr")[2],
@@ -332,15 +450,23 @@ dat <- readMatrix(INFILE)
 dat.norm <- normalizeContigsPerMatrix(dat,exclude=24:25,scale.exclude=24:25,
                                       genome.ploidy=2,contig.ploidy=rep(2,24))
 
-#Assign sexes
-sexes <- assignSex(dat.norm,plot=F)
+#Set sex assignment table
+sexAssign.df <- data.frame("CN.X"=c(1,2,1,3,2,1),
+                           "CN.Y"=c(1,0,0,0,1,2),
+                           "label"=c("MALE","FEMALE","TURNER",
+                                     "TRIPLE X","KLINEFELTER","JACOBS"),
+                           "color"=c("#00BFF4","#fd8eff","#e02006",
+                                     "#7B2AB3","#FF6A09","#29840f"))
 
-#Split data by sex & evenly distribute NAs among M & F
-sex.males <- as.vector(which(sexes=="MALE"))
-sex.females <- as.vector(which(sexes=="FEMALE"))
-sex.NAs <- as.vector(which(is.na(sexes)))
+#Assign sexes
+sexes <- assignSex(dat.norm,plot=F,sexAssign.df=sexAssign.df)
+
+#Split data by chrX copy number (≥2 or <2) & evenly distribute NAs among M & F
+sex.males <- as.vector(which(round(as.numeric(sexes$chrX.CN,0))<2 & !is.na(sexes$chrX.CN)))
+sex.females <- as.vector(which(round(as.numeric(sexes$chrX.CN,0))>=2 & !is.na(sexes$chrX.CN)))
+sex.NAs <- as.vector(which(is.na(sexes$chrX.CN)))
 sex.NAs.first <- sex.NAs[1:floor((length(sex.NAs)/2))]
-sex.NAs.second <- sex.NAs[floor((length(sex.NAs)/2)):length(sex.NAs)]
+sex.NAs.second <- sex.NAs[ceiling((length(sex.NAs)/2)):length(sex.NAs)]
 dat.males <- dat[c(sex.males,sex.NAs.first),]
 dat.females <- dat[c(sex.females,sex.NAs.second),]
 
@@ -350,23 +476,22 @@ males.norm <- normalizeContigsPerMatrix(dat.males,exclude=24:25,scale.exclude=NA
 females.norm <- normalizeContigsPerMatrix(dat.females,exclude=24:25,scale.exclude=NA,
                                           genome.ploidy=2,contig.ploidy=c(rep(2,22),2,0))
 
-
 #Plot CN per contig - Males
-png(paste(OUTDIR,"/estimated_CN_per_contig.males_only.with_contours.png",sep=""),
+png(paste(OUTDIR,"/estimated_CN_per_contig.chrX_lessThan_2copies.with_contours.png",sep=""),
     height=1250,width=2500,res=300)
 boxplotsPerContig(males.norm,exclude=NA,contig.ploidy=c(rep(2,22),1,1),connect=T)
 dev.off()
-png(paste(OUTDIR,"/estimated_CN_per_contig.males_only.no_contours.png",sep=""),
+png(paste(OUTDIR,"/estimated_CN_per_contig.chrX_lessThan_2copies.no_contours.png",sep=""),
     height=1250,width=2500,res=300)
 boxplotsPerContig(males.norm,exclude=NA,contig.ploidy=c(rep(2,22),1,1),connect=F)
 dev.off()
 
 #Plot CN per contig - Females
-png(paste(OUTDIR,"/estimated_CN_per_contig.females_only.with_contours.png",sep=""),
+png(paste(OUTDIR,"/estimated_CN_per_contig.chrX_atLeast_2copies.with_contours.png",sep=""),
     height=1250,width=2500,res=300)
 boxplotsPerContig(females.norm,exclude=NA,contig.ploidy=c(rep(2,22),2,0),connect=T)
 dev.off()
-png(paste(OUTDIR,"/estimated_CN_per_contig.females_only.no_contours.png",sep=""),
+png(paste(OUTDIR,"/estimated_CN_per_contig.chrX_atLeast_2copies.no_contours.png",sep=""),
     height=1250,width=2500,res=300)
 boxplotsPerContig(females.norm,exclude=NA,contig.ploidy=c(rep(2,22),2,0),connect=F)
 dev.off()
@@ -377,43 +502,42 @@ merged.norm <- rbind(males.norm,females.norm)
 #Plots sex assignment dotplot
 png(paste(OUTDIR,"/sex_assignments.png",sep=""),
     height=1500,width=1500,res=300)
-sexes <- assignSex(dat.norm)
+sexes <- assignSex(merged.norm,sexAssign.df=sexAssign.df)
 dev.off()
 
-#Write table of sexes
-sexes <- data.frame("ID"=names(sexes),"SEX"=sexes)
-sexes <- sexes[match(dat$ID,sexes$ID),]
-colnames(sexes)[1] <- "#ID"
-write.table(sexes,paste(OUTDIR,"/sample_sex_assignments.txt",sep=""),
-            col.names=T,row.names=F,sep="\t",quote=F)
-
-#Generate p-values, q-values, and rounded CNs for males/females
-males.p <- testCNs(males.norm,FDR=F)
-males.q <- testCNs(males.norm,FDR=T)
-males.CN <- males.norm
-males.CN[,-1] <- apply(males.CN[,-1],2,round,digits=2)
-females.p <- testCNs(females.norm,FDR=F)
-females.q <- testCNs(females.norm,FDR=T)
-females.CN <- females.norm
-females.CN[,-1] <- apply(females.CN[,-1],2,round,digits=2)
-
-#Merge male/female p-values and rounded CNs
-merged.p <- rbind(males.p,females.p)
-merged.p <- merged.p[match(dat$ID,merged.p$ID),]
-colnames(merged.p) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_pValue",sep=""))
-merged.q <- rbind(males.q,females.q)
-merged.q <- merged.q[match(dat$ID,merged.q$ID),]
-colnames(merged.q) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_qValue",seq=""))
-merged.CN <- rbind(males.CN,females.CN)
-merged.CN <- merged.CN[match(dat$ID,merged.CN$ID),]
-colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
-
-#Write merged p-values and rounded CNs to file
-write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
-            col.names=T,row.names=F,sep="\t",quote=F)
-write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
-            col.names=T,row.names=F,sep="\t",quote=F)
-write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
-            col.names=T,row.names=F,sep="\t",quote=F)
-
+# #Write table of sexes
+# sexes <- data.frame("ID"=names(sexes),"SEX"=sexes)
+# sexes <- sexes[match(dat$ID,sexes$ID),]
+# colnames(sexes)[1] <- "#ID"
+# write.table(sexes,paste(OUTDIR,"/sample_sex_assignments.txt",sep=""),
+#             col.names=T,row.names=F,sep="\t",quote=F)
+#
+# #Generate p-values, q-values, and rounded CNs for males/females
+# males.p <- testCNs(males.norm,FDR=F)
+# males.q <- testCNs(males.norm,FDR=T)
+# males.CN <- males.norm
+# males.CN[,-1] <- apply(males.CN[,-1],2,round,digits=2)
+# females.p <- testCNs(females.norm,FDR=F)
+# females.q <- testCNs(females.norm,FDR=T)
+# females.CN <- females.norm
+# females.CN[,-1] <- apply(females.CN[,-1],2,round,digits=2)
+#
+# #Merge male/female p-values and rounded CNs
+# merged.p <- rbind(males.p,females.p)
+# merged.p <- merged.p[match(dat$ID,merged.p$ID),]
+# colnames(merged.p) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_pValue",sep=""))
+# merged.q <- rbind(males.q,females.q)
+# merged.q <- merged.q[match(dat$ID,merged.q$ID),]
+# colnames(merged.q) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_qValue",sep=""))
+# merged.CN <- rbind(males.CN,females.CN)
+# merged.CN <- merged.CN[match(dat$ID,merged.CN$ID),]
+# colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
+#
+# #Write merged p-values and rounded CNs to file
+# write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
+#             col.names=T,row.names=F,sep="\t",quote=F)
+# write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
+#             col.names=T,row.names=F,sep="\t",quote=F)
+# write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
+#             col.names=T,row.names=F,sep="\t",quote=F)
 
