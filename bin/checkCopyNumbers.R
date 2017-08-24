@@ -438,6 +438,11 @@ if(is.null(OUTDIR)){
   OUTDIR <- ""
 }
 
+#Create OUTDIR if it doesn't already exist
+if(!dir.exists(OUTDIR)){
+  dir.create(OUTDIR)
+}
+
 #Checks for appropriate positional arguments
 if(length(args$args) != 1){
   stop("Must supply an input median coverage matrix\n")
@@ -466,7 +471,7 @@ sex.males <- as.vector(which(round(as.numeric(sexes$chrX.CN,0))<2 & !is.na(sexes
 sex.females <- as.vector(which(round(as.numeric(sexes$chrX.CN,0))>=2 & !is.na(sexes$chrX.CN)))
 sex.NAs <- as.vector(which(is.na(sexes$chrX.CN)))
 sex.NAs.first <- sex.NAs[1:floor((length(sex.NAs)/2))]
-sex.NAs.second <- sex.NAs[ceiling((length(sex.NAs)/2)):length(sex.NAs)]
+sex.NAs.second <- sex.NAs[(floor((length(sex.NAs)/2))+1):length(sex.NAs)]
 dat.males <- dat[c(sex.males,sex.NAs.first),]
 dat.females <- dat[c(sex.females,sex.NAs.second),]
 
