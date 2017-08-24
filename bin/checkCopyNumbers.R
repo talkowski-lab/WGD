@@ -267,7 +267,7 @@ assignSex <- function(dat,sexChr=24:25,
     legend("topright",bg="white",
            legend=c(legendLabs,"MOSAIC","OTHER"),
            pch=19,col=c(sexAssign.df$color,"#53edd0","#8F1336"),
-           cex=0.5,pt.cex=1)
+           cex=0.75,pt.cex=1)
   }
 
   #Return sex assignments
@@ -424,7 +424,9 @@ option_list <- list(
               help="output directory [default: pwd]",
               metavar="character"),
   make_option(c("-p", "--noplot"),action="store_true",default=FALSE,
-              help="disable copy number visualization [default: FALSE]")
+              help="disable copy number visualization [default: FALSE]"),
+  make_option(c("-z", "--gzip"),action="store_false",default=TRUE,
+              help="gzip output files [default: TRUE]")
 )
 
 #Get command-line arguments & options
@@ -434,6 +436,7 @@ args <- parse_args(OptionParser(usage="%prog [options] median_coverage_matrix",
 INFILE <- args$args[1]
 OUTDIR <- args$options$OUTDIR
 noplot <- args$options$noplot
+gzip <- args$options$gzip
 if(is.null(OUTDIR)){
   OUTDIR <- ""
 }
@@ -515,6 +518,9 @@ sexes <- sexes[match(dat$ID,sexes$ID),]
 colnames(sexes)[1] <- "#ID"
 write.table(sexes,paste(OUTDIR,"/sample_sex_assignments.txt",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/sample_sex_assignments.txt",sep=""),intern=F,wait=F)
+}
 
 #Generate p-values, q-values, and rounded CNs for males/females
 males.p <- testCNs(males.norm,FDR=F)
@@ -537,11 +543,23 @@ merged.CN <- rbind(males.CN,females.CN)
 merged.CN <- merged.CN[match(dat$ID,merged.CN$ID),]
 colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
 
-#Write merged p-values and rounded CNs to file
+#Write merged p-values
 write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/CNA_pValues.txt",sep=""),intern=F,wait=F)
+}
+
+#Write merged q-values
 write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/CNA_qValues.txt",sep=""),intern=F,wait=F)
+}
+
+#Write merged copy number estimates
 write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
-
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/estimated_copy_numbers.txt",sep=""),intern=F,wait=F)
+}
