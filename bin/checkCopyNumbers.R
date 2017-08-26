@@ -163,8 +163,13 @@ assignSex <- function(dat,sexChr=24:25,
   rownames(sexes) <- 1:nrow(sexes)
 
   #Gather sd of X and Y assignments from males
-  sd.X <- sd(dat.mod[which(sexes$Assignment[-sample.exclude]=="MALE"),2],na.rm=T)
-  sd.Y <- sd(dat.mod[which(sexes$Assignment[-sample.exclude]=="MALE"),3],na.rm=T)
+  if(length(sample.exclude)>0){
+    sd.X <- sd(dat.mod[which(sexes$Assignment[-sample.exclude]=="MALE"),2],na.rm=T)
+    sd.Y <- sd(dat.mod[which(sexes$Assignment[-sample.exclude]=="MALE"),3],na.rm=T)
+  }else{
+    sd.X <- sd(dat.mod[which(sexes$Assignment=="MALE"),2],na.rm=T)
+    sd.Y <- sd(dat.mod[which(sexes$Assignment=="MALE"),3],na.rm=T)
+  }
 
   #Run mosaic check per sample
   pMosaic <- as.data.frame(t(unlist(apply(sexes,1,function(vals){
@@ -229,25 +234,49 @@ assignSex <- function(dat,sexChr=24:25,
 
     #Assign colors for sex plotting
     if(mosaicThresh=="FDR"){
-      colVect <- apply(sexes[-sample.exclude,c(4,7:8)],1,function(vals){
-        if(min(as.numeric(vals[2:3]))<0.05){
-          return("#53edd0")
-        }else if(vals[1] %in% sexAssign.df$label){
-          return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
-        }else{
-          return("#8F1336")
-        }
-      })
+      if(length(sample.exclude)>0){
+        colVect <- apply(sexes[-sample.exclude,c(4,7:8)],1,function(vals){
+          if(min(as.numeric(vals[2:3]))<0.05){
+            return("#53edd0")
+          }else if(vals[1] %in% sexAssign.df$label){
+            return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
+          }else{
+            return("#8F1336")
+          }
+        })
+      }else{
+        colVect <- apply(sexes[,c(4,7:8)],1,function(vals){
+          if(min(as.numeric(vals[2:3]))<0.05){
+            return("#53edd0")
+          }else if(vals[1] %in% sexAssign.df$label){
+            return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
+          }else{
+            return("#8F1336")
+          }
+        })
+      }
     }else{
-      colVect <- apply(sexes[-sample.exclude,c(4:6)],1,function(vals){
-        if(min(as.numeric(vals[2:3]))<0.05/nrow(dat.mod)){
-          return("#53edd0")
-        }else if(vals[1] %in% sexAssign.df$label){
-          return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
-        }else{
-          return("#8F1336")
-        }
-      })
+      if(length(sample.exclude)>0){
+        colVect <- apply(sexes[-sample.exclude,c(4:6)],1,function(vals){
+          if(min(as.numeric(vals[2:3]))<0.05/nrow(dat.mod)){
+            return("#53edd0")
+          }else if(vals[1] %in% sexAssign.df$label){
+            return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
+          }else{
+            return("#8F1336")
+          }
+        })
+      }else{
+        colVect <- apply(sexes[,c(4:6)],1,function(vals){
+          if(min(as.numeric(vals[2:3]))<0.05/nrow(dat.mod)){
+            return("#53edd0")
+          }else if(vals[1] %in% sexAssign.df$label){
+            return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
+          }else{
+            return("#8F1336")
+          }
+        })
+      }
     }
 
     #Plot points
