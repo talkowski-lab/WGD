@@ -122,11 +122,15 @@ assignSex <- function(dat,sexChr=24:25,
       return(i)
     }
   }))
-  dat.mod <- dat[-sample.exclude,c(1,sexChr)]
-  if(nrow(dat)!=nrow(dat.mod)){
-    warning(paste(nrow(dat)-nrow(dat.mod),
-                  " samples missing sex chromosome coverage information and were excluded from sex assignments.",
-                  sep=""))
+  if(length(sample.exclude)>0){
+    dat.mod <- dat[-sample.exclude,c(1,sexChr)]
+    if(nrow(dat)!=nrow(dat.mod)){
+      warning(paste(nrow(dat)-nrow(dat.mod),
+                    " samples missing sex chromosome coverage information and were excluded from sex assignments.",
+                    sep=""))
+    }
+  }else{
+    dat.mod <- dat[,c(1,sexChr)]
   }
 
   #Round X & Y CN-types to nearest whole integer
