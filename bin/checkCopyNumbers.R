@@ -236,7 +236,7 @@ assignSex <- function(dat,sexChr=24:25,
     if(mosaicThresh=="FDR"){
       if(length(sample.exclude)>0){
         colVect <- apply(sexes[-sample.exclude,c(4,7:8)],1,function(vals){
-          if(min(as.numeric(vals[2:3]))<0.05){
+          if(!all(is.na(vals[2:3])) & min(as.numeric(vals[2:3]))<0.05){
             return("#53edd0")
           }else if(vals[1] %in% sexAssign.df$label){
             return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
@@ -246,7 +246,7 @@ assignSex <- function(dat,sexChr=24:25,
         })
       }else{
         colVect <- apply(sexes[,c(4,7:8)],1,function(vals){
-          if(min(as.numeric(vals[2:3]))<0.05){
+          if(!all(is.na(vals[2:3])) & min(as.numeric(vals[2:3]))<0.05){
             return("#53edd0")
           }else if(vals[1] %in% sexAssign.df$label){
             return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
@@ -258,7 +258,7 @@ assignSex <- function(dat,sexChr=24:25,
     }else{
       if(length(sample.exclude)>0){
         colVect <- apply(sexes[-sample.exclude,c(4:6)],1,function(vals){
-          if(min(as.numeric(vals[2:3]))<0.05/nrow(dat.mod)){
+          if(!all(is.na(vals[2:3])) & min(as.numeric(vals[2:3]))<0.05/nrow(dat.mod)){
             return("#53edd0")
           }else if(vals[1] %in% sexAssign.df$label){
             return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
@@ -268,7 +268,7 @@ assignSex <- function(dat,sexChr=24:25,
         })
       }else{
         colVect <- apply(sexes[,c(4:6)],1,function(vals){
-          if(min(as.numeric(vals[2:3]))<0.05/nrow(dat.mod)){
+          if(!all(is.na(vals[2:3])) & min(as.numeric(vals[2:3]))<0.05/nrow(dat.mod)){
             return("#53edd0")
           }else if(vals[1] %in% sexAssign.df$label){
             return(sexAssign.df[which(sexAssign.df$label==vals[1]),]$color)
@@ -506,10 +506,20 @@ sexes <- assignSex(dat.norm,plot=F,sexAssign.df=sexAssign.df)
 sex.males <- as.vector(which(round(as.numeric(sexes$chrX.CN,0))<2 & !is.na(sexes$chrX.CN)))
 sex.females <- as.vector(which(round(as.numeric(sexes$chrX.CN,0))>=2 & !is.na(sexes$chrX.CN)))
 sex.NAs <- as.vector(which(is.na(sexes$chrX.CN)))
-sex.NAs.first <- sex.NAs[1:floor((length(sex.NAs)/2))]
-sex.NAs.second <- sex.NAs[(floor((length(sex.NAs)/2))+1):length(sex.NAs)]
-dat.males <- dat[c(sex.males,sex.NAs.first),]
-dat.females <- dat[c(sex.females,sex.NAs.second),]
+if(length(sex.NAs)==0){
+  dat.males <- dat[c(sex.males),]
+  dat.females <- dat[c(sex.females),]
+}else{
+  if(length(sex.NAs)>1){
+    sex.NAs.first <- sex.NAs[1:floor((length(sex.NAs)/2))]
+    sex.NAs.second <- sex.NAs[(floor((length(sex.NAs)/2))+1):length(sex.NAs)]
+  }else if(length(sex.NAs)==1){
+    sex.NAs.first <- sex.NAs
+    sex.NAs.second <- NULL
+  }
+  dat.males <- dat[c(sex.males,sex.NAs.first),]
+  dat.females <- dat[c(sex.females,sex.NAs.second),]
+}
 
 #Normalize CN - males & females separately
 males.norm <- normalizeContigsPerMatrix(dat.males,exclude=24:25,scale.exclude=NA,
