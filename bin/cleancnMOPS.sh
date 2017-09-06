@@ -54,60 +54,44 @@ if [ -z ${SAMPLES} ] || [ -z ${GFFS} ]; then
   exit 0
 fi
 
-#Check for gzip optioned only if output file specified
-if [ ${OUTDIR} == "/dev/stdout" ] && [ ${GZ} == 1 ]; then
-  echo -e "\nOUTDIR required for zip-compressed output"
-  usage
-  exit 0
+#Attempts to create OUTDIR
+if ! [ -e ${OUTDIR} ]; then
+  mkdir ${OUTDIR}
 fi
 
-#Scrub ".gz" from output filename if provided by user
-if [ ${GZ} == 1 ] && [ ${OUTDIR: -3} == ".gz" ]; then
-  OUTDIR=$( echo "${OUTDIR}" | sed 's/\.gz//g' )
-fi
+#Splits raw GFFs by copy state and formats to BED
+#Deletions
+DEL_MASTER=`mktemp`
+while read gff; do
+  sed 's/\;/\t/g' ${gff} | fgrep -v "#" | sed 's/CN=CN//g' | \
+  awk -v OFS="\t" '{ if ($NF<2) print $1, $4, $5, $9 }' | 
+  sed 's/sampleName=//g'
+done < ${GFFS} | sort -Vk1,1 -k2,2n -k3,3n -k4,4 > ${DEL_MASTER}
+#Duplications
+DUP_MASTER=`mktemp`
+while read gff; do
+  sed 's/\;/\t/g' ${gff} | fgrep -v "#" | sed 's/CN=CN//g' | \
+  awk -v OFS="\t" '{ if ($NF>2) print $1, $4, $5, $9 }' | 
+  sed 's/sampleName=//g'
+done < ${GFFS} | sort -Vk1,1 -k2,2n -k3,3n -k4,4 > ${DUP_MASTER}
 
-#Unzip input file if gzipped
-GZI=0
-if [ $( file ${INPUT} | fgrep "gzip compressed" | wc -l ) -gt 0 ]; then
-  GZI=1
-  TMPI=`mktemp`; mv ${TMPI} ${TMPI}.gz; TMPI=${TMPI}.gz
-  cp ${INPUT} ${TMPI}
-  gunzip ${TMPI}
-  INPUT=$( echo "${TMPI}" | sed 's/\.gz/\t/g' | cut -f1 )
-fi
+#Iterates over samples & merges across GFFs
+while read ID; do
+  #Make output directory per sample
+  if ! [ -e ${OUTDIR}/${ID} ]; then
+    mkdir ${OUTDIR}/${ID}
+  fi
+  #Merge deletions
+  awk -v ID=${ID} '{ if ($4==ID) print $1, $2, $3 }' ${DEL_MASTER} | \
+  bedtools merge -i - > ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
+  #Merge duplications
+  awk -v ID=${ID} '{ if ($4==ID) print $1, $2, $3 }' ${DUP_MASTER} | \
+  bedtools merge -i - > ${OUTDIR}/${ID}/${ID}.cnMOPS.DUP.bed
+  #Gzip (if optioned)
+  if [ ${GZ} -eq 1 ]; then
+    gzip -f ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
+    gzip -f ${OUTDIR}/${ID}/${ID}.cnMOPS.DUP.bed
+  fi
+done < ${SAMPLES}
 
-#Gather number of samples present in file
-NSAMP=$( head -n1 ${INPUT} | awk '{ print NF-3 }' )
-COLS=$( seq 4 $((${NSAMP}+3)) | paste -s -d, )
 
-#Calculate new bin size
-OBIN=$( fgrep -v "#" ${INPUT} | head -n1 | awk '{ print $3-$2 }' )
-NBIN=$((${RATIO}*${OBIN}))
-
-#Print header from original file to OUTDIR
-head -n1 ${INPUT} > ${OUTDIR}
-
-#Iterate over contigs present in input file
-while read CONTIG; do
-  #Get min and max coordinate present in input file for contig
-  MIN=$( awk -v CONTIG=${CONTIG} '{ if ($1==CONTIG) print $2 }' ${INPUT} | head -n1 )
-  MAX=$( awk -v CONTIG=${CONTIG} '{ if ($1==CONTIG) print $3 }' ${INPUT} | tail -n1 )
-  #Perform bedtools map function (operation dependent on norm/non-norm)
-  bedtools map -c ${COLS} -o ${BEDOP} \
-  -a <( paste <( seq ${MIN} ${NBIN} ${MAX} ) \
-              <( seq $((${MIN}+${NBIN})) ${NBIN} $((${MAX}+${NBIN})) ) | \
-        awk -v CONTIG=${CONTIG} -v OFS="\t" '{ print CONTIG, $1, $2 }' ) \
- -b <( awk -v CONTIG=${CONTIG} -v OFS="\t" '{ if ($1==CONTIG) print $0 }' \
-  ${INPUT} ) | awk '{ if ($4!=".") print $0 }'
-done < <( fgrep -v "#" ${INPUT} | cut -f1 | sort -Vk1,1 | uniq ) >> ${OUTDIR}
-
-#Gzip output if optioned
-if [ ${GZ} == 1 ]; then
-  gzip --force ${OUTDIR}
-fi
-
-#Clean up
-if [ GZI == 1 ]; then
-  rm -rf ${TMPI}
-  rm -rf ${INPUT}
-fi
