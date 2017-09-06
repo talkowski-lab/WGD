@@ -81,4 +81,4 @@ res <- cn.mops(cov)
 res <- calcIntegerCopyNumbers(res)
 
 #Exports CNVs
-{export(cnvs(res),paste(OUTDIR,"/",ID,".cnMOPS.gff",sep=""),"GFF3")}
+export(cnvs(res),paste(OUTDIR,"/",ID,".cnMOPS.gff",sep=""),"GFF3")
