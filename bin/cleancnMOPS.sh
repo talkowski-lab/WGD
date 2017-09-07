@@ -94,4 +94,6 @@ while read ID; do
   fi
 done < ${SAMPLES}
 
+#Clean up
+rm ${DEL_MASTER} ${DUP_MASTER}
 
