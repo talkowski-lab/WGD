@@ -10,7 +10,7 @@
 usage(){
 cat <<EOF
 
-usage: compressCov.sh [-h] [-z] [-o OUTFILE] INPUT RATIO
+usage: compressCov.sh [-h] [-N] [-s] [-z] [-o OUTFILE] INPUT RATIO
 
 Helper tool to automate compression of raw binCov.py output bed files or
 bed-style coverage matrices into larger bin sizes
@@ -21,8 +21,9 @@ Positional arguments:
 
 Optional arguments:
   -h  HELP        Show this help message and exit
-  -z  GZIP        Gzip output file
+  -N  NO HEADER   Input BED file does not have a header (default: has header)
   -s  SUM         Report sum (default: report median)
+  -z  GZIP        Gzip output file
   -o  OUTFILE     Output file (default: stdout)
 
 EOF
@@ -30,22 +31,26 @@ EOF
 
 #Parse arguments
 OUTFILE=/dev/stdout
-GZ=0
+HEADER=1
 BEDOP="median"
-while getopts ":o:zsh" opt; do
+GZ=0
+while getopts ":hNszo:" opt; do
   case "$opt" in
     h)
       usage
       exit 0
       ;;
-    o)
-      OUTFILE=${OPTARG}
+    N)
+      HEADER=0
+      ;;
+    s)
+      BEDOP="sum"
       ;;
     z)
       GZ=1
       ;;
-    s)
-      BEDOP="sum"
+    o)
+      OUTFILE=${OPTARG}
       ;;
   esac
 done
@@ -86,11 +91,13 @@ NSAMP=$( head -n1 ${INPUT} | awk '{ print NF-3 }' )
 COLS=$( seq 4 $((${NSAMP}+3)) | paste -s -d, )
 
 #Calculate new bin size
-OBIN=$( fgrep -v "#" ${INPUT} | head -n1 | awk '{ print $3-$2 }' )
+OBIN=$( fgrep -v "#" ${INPUT} | head -n2 | tail -n1 | awk '{ print $3-$2 }' )
 NBIN=$((${RATIO}*${OBIN}))
 
 #Print header from original file to OUTFILE
-head -n1 ${INPUT} > ${OUTFILE}
+if [ ${HEADER} -eq 1 ]; then
+  head -n1 ${INPUT} > ${OUTFILE}
+fi
 
 #Iterate over contigs present in input file
 while read CONTIG; do
