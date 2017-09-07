@@ -82,10 +82,10 @@ while read ID; do
     mkdir ${OUTDIR}/${ID}
   fi
   #Merge deletions
-  awk -v ID=${ID} '{ if ($4==ID) print $1, $2, $3 }' ${DEL_MASTER} | \
+  awk -v ID=${ID} -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DEL_MASTER} | \
   bedtools merge -i - > ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
   #Merge duplications
-  awk -v ID=${ID} '{ if ($4==ID) print $1, $2, $3 }' ${DUP_MASTER} | \
+  awk -v ID=${ID} -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DUP_MASTER} | \
   bedtools merge -i - > ${OUTDIR}/${ID}/${ID}.cnMOPS.DUP.bed
   #Gzip (if optioned)
   if [ ${GZ} -eq 1 ]; then
