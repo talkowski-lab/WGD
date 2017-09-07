@@ -58,9 +58,6 @@ shift $(( ${OPTIND} - 1))
 INPUT=$1
 RATIO=$2
 
-###DEV###
-echo $HEADER
-
 #Check for required input
 if [ -z ${INPUT} ] || [ -z ${RATIO} ]; then
   usage
@@ -96,11 +93,6 @@ COLS=$( seq 4 $((${NSAMP}+3)) | paste -s -d, )
 #Calculate new bin size
 OBIN=$( fgrep -v "#" ${INPUT} | head -n2 | tail -n1 | awk '{ print $3-$2 }' )
 NBIN=$((${RATIO}*${OBIN}))
-
-###DEV###
-echo $OBIN
-echo $RATIO
-echo $NBIN
 
 #Print header from original file to OUTFILE
 if [ ${HEADER} -eq 1 ]; then
