@@ -58,14 +58,6 @@ BINCOVS=$1
 #Get path to WGD bin
 BIN=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-##DEV PARAMS ON BROAD CLUSTER
-# REBIN=10
-# OUTDIR=${TMPDIR}/cnMOPS_workflow_test
-# PREFIX="cnMOPS_test"
-# CLEANUP=0
-# BINCOVS=${WRKDIR}/analysis/cnMOPS_benchmarking/matrix/XX_plus_20/XX_plus_20.makeMatrix_input.txt
-# BIN=${WRKDIR}/bin/WGD/bin/
-
 #Check for required input
 if [ -z ${BINCOVS} ]; then
   usage
@@ -101,11 +93,15 @@ ${BIN}/runcnMOPS.R \
 ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz \
 ${OUTDIR}/calls/
 
+#Write lists of samplesa and input GFFs
+cut -f1 ${BINCOVS} > ${OUTDIR}/samples.list
+echo -e "${OUTDIR}/calls/${PREFIX}.cnMOPS.gff" > ${OUTDIR}/GFFs.list
+
 #Format cn.MOPS calls
-${WRKDIR}/bin/WGD/bin/cleancnMOPS.sh -z \
--o ${WRKDIR}/analysis/cnMOPS_benchmarking/calls/ \
-<( cut -f1 ${BINCOVS} ) \
-<( echo -e "${OUTDIR}/calls/${PREFIX}.cnMOPS.gff" )
+${BIN}/cleancnMOPS.sh -z \
+-o ${OUTDIR}/calls/ \
+${OUTDIR}/samples.list \
+${OUTDIR}/GFFs.list
 
 #Clean up (if optioned)
 if [ ${CLEANUP} -eq 1 ]; then
