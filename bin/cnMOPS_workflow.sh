@@ -72,12 +72,14 @@ for DIR in ${OUTDIR} ${OUTDIR}/calls; do
 done
 
 #Creates binCov matrix
+echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | GENERATING COVERAGE MATRIX..."
 ${BIN}/makeMatrix.sh -z \
 -o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
 ${BINCOVS}
 
 #Recompresses binCov matrix (if optioned)
 if [ ${REBIN} -gt 1 ]; then
+  echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | REBINNING COVERAGE MATRIX..."
   ${BIN}/compressCov.sh -z -s \
   -o ${OUTDIR}/${PREFIX}.compressed_matrix.bed \
   ${OUTDIR}/${PREFIX}.raw_matrix.bed.gz \
@@ -88,6 +90,7 @@ else
 fi
 
 #Run cn.MOPS
+echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | RUNNING cn.MOPS..."
 ${BIN}/runcnMOPS.R \
 -I ${PREFIX} \
 ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz \
@@ -98,6 +101,7 @@ cut -f1 ${BINCOVS} > ${OUTDIR}/samples.list
 echo -e "${OUTDIR}/calls/${PREFIX}.cnMOPS.gff" > ${OUTDIR}/GFFs.list
 
 #Format cn.MOPS calls
+echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | FORMATTING cn.MOPS CALLS..."
 ${BIN}/cleancnMOPS.sh -z \
 -o ${OUTDIR}/calls/ \
 ${OUTDIR}/samples.list \
@@ -106,7 +110,9 @@ ${OUTDIR}/GFFs.list
 #Clean up (if optioned)
 if [ ${CLEANUP} -eq 1 ]; then
   for file in ${OUTDIR}/${PREFIX}.raw_matrix.bed.gz \
-              ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz; do
+              ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz \
+              ${OUTDIR}/samples.list \
+              ${OUTDIR}/GFFs.list; do
     rm ${file}
   done
 fi
