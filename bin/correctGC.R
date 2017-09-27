@@ -11,18 +11,14 @@
 # 2: corresponding GC masks for each contig
 # 3: full path to desired output file for each contig
 
-#####DEV PARAMETERS (LOCAL)
-WRKDIR <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/"
-cov.paths <- paste(WRKDIR,"WGD_batching_dev_data/GC_correction_data/test_data/G95826_MH0139111/",
-                 "G95826_MH0139111.",c(1:22,"X","Y"),".nucleotide.rawCov.100bp.bed.gz",sep="")
-out.paths <- paste(WRKDIR,"WGD_batching_dev_data/GC_correction_data/test_data/G95826_MH0139111/",
-                   "G95826_MH0139111.",c(1:22,"X","Y"),".nucleotide.rawCov_GCadj.100bp.bed",sep="")
-GC.paths <- paste(WRKDIR,"WGD_batching_dev_data/GC_correction_data/test_data/GC_profiles/h37.GC.",
-                  c(1:22,"X","Y"),".bed.gz",sep="")
-
-#####DEV TEST (LOCAL)
-cov.dat <- readBinCovList(cov.paths)
-GC.dat <- readBinCovList(GC.paths)
+# #####DEV PARAMETERS (LOCAL)
+# WRKDIR <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/"
+# cov.paths <- paste(WRKDIR,"WGD_batching_dev_data/GC_correction_data/test_data/G95826_MH0139111/",
+#                  "G95826_MH0139111.",c(1:22,"X","Y"),".nucleotide.rawCov.100bp.bed.gz",sep="")
+# out.paths <- paste(WRKDIR,"WGD_batching_dev_data/GC_correction_data/test_data/G95826_MH0139111/",
+#                    "G95826_MH0139111.",c(1:22,"X","Y"),".nucleotide.rawCov_GCadj.100bp.bed",sep="")
+# GC.paths <- paste(WRKDIR,"WGD_batching_dev_data/GC_correction_data/test_data/GC_profiles/h37.GC.",
+#                   c(1:22,"X","Y"),".bed.gz",sep="")
 
 ####################################
 #####Set parameters & load libraries
