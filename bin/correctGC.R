@@ -34,17 +34,22 @@ options(scipen=1000,stringsAsFactors=F)
 ###############################################################################
 #Note: desiged to iterate over per-chromosome binCov files for a single sample
 readBinCovList <- function(paths,labels=c(1:22,"X","Y"),
-                           norm=F,exclude=c("X","Y")){
-  #Iterate over paths and read just the fourth column
-  dat <- sapply(paths,function(path){
+                           norm=F,exclude=c("X","Y"),
+                           returnCoords=F){
+  #Iterate over paths and read just the fourth column unless otherwise optioned
+  dat <- lapply(paths,function(path){
     dat <- as.data.frame(read.table(path,header=F,sep="\t"))
     colnames(dat) <- c("chr","start","end","cov")
-    contig <- unique(dat$chr)
-    return(dat$cov)
+    if(returnCoords==F){
+      return(dat$cov)
+    }else{
+      return(as.data.frame(dat[,1:3]))
+    }
   })
   names(dat) <- labels
+
   #Normalize as median of all bins, if optioned
-  if(norm==T){
+  if(returnCoords==F & norm==T){
     median.all <- median(unlist(sapply(which(!(names(dat) %in% exclude)),function(i){
       return(dat[[i]])
     })),na.rm=T)
@@ -53,6 +58,7 @@ readBinCovList <- function(paths,labels=c(1:22,"X","Y"),
     })
     return(dat)
   }
+
   #Return values
   return(dat)
 }
@@ -63,8 +69,8 @@ readBinCovList <- function(paths,labels=c(1:22,"X","Y"),
 binCovListMean <- function(binCovList,exclude=c("X","Y")){
   #Convert all non-exclude contigs to single giant vector
   vals <- as.numeric(unlist(binCovList[which(!(names(binCovList) %in% exclude))]))
-  #Find middle 95% of data
-  cutoffs <- quantile(vals,probs=c(0.025,0.975))
+  #Find middle 95% of data after excluding bins with no coverage
+  cutoffs <- quantile(vals[which(vals>0)],probs=c(0.025,0.975))
   #Compute mean on middle 95% of data
   covMean <- mean(vals[which(vals>cutoffs[1] & vals<cutoffs[2])],na.rm=T)
   #Return mean
@@ -82,7 +88,8 @@ GCBinAdjustments <- function(vals,GC,
   GC <- as.numeric(round(100*GC))
 
   #Determine cutoffs for middle 95% of coverage data and GC data
-  cov.thresh <- quantile(vals,probs=c(0.025,0.975),na.rm=T)
+  # after excluding bins with zero coverage
+  cov.thresh <- quantile(vals[which(vals>0)],probs=c(0.025,0.975),na.rm=T)
   GC.thresh <- quantile(GC,probs=c(0.025,0.975),na.rm=T)
 
   #Compute statistics for each GC bin
@@ -118,7 +125,7 @@ GCBinAdjustments <- function(vals,GC,
     binVals <- newVals[which(GC==GCbin)]
     if(length(binVals)>0){
       #Compute mean after excluding top & bottom 2.5% of binVals
-      cutoff <- quantile(binVals,probs=c(0.025,0.975),na.rm=T)
+      cutoff <- quantile(binVals[which(binVals>0)],probs=c(0.025,0.975),na.rm=T)
       binMean <- mean(binVals[which(binVals>=cutoff[1] & binVals<=cutoff[2])],na.rm=T)
       #Center binVals
       if(!is.na(binMean)){
@@ -138,6 +145,9 @@ GCBinAdjustments <- function(vals,GC,
     }
   }
 
+  #If original value was zero, rewrite as zero
+  newVals[which(vals==0)] <- 0
+
   #Compute adjustments
   adj <- newVals-vals
 
@@ -155,6 +165,7 @@ wrmean <- function(vals,weights=c(0.1,0.2,1,0.2,0.1)){
                           "center"=vals,
                           "post1"=c(vals[2:length(vals)],NA),
                           "post1"=c(vals[3:length(vals)],NA,NA))
+
   #Smooth each row of smooth.df
   smoothed.vals <- apply(smooth.df,1,function(rowvals){
     rowsum <- sum(rowvals*weights,na.rm=T)
@@ -162,6 +173,10 @@ wrmean <- function(vals,weights=c(0.1,0.2,1,0.2,0.1)){
     smoothed <- rowsum/rowdenom
     return(smoothed)
   })
+
+  #If original value was zero, rewrite as zero
+  smoothed.vals[which(vals==0)] <- 0
+
   #Return smoothed vals
   return(smoothed.vals)
 }
@@ -172,8 +187,6 @@ wrmean <- function(vals,weights=c(0.1,0.2,1,0.2,0.1)){
 require(optparse)
 #List of command-line options
 option_list <- list(
-  make_option(c("-p", "--noplot"),action="store_true",default=FALSE,
-              help="disable copy number visualization [default: FALSE]"),
   make_option(c("-z", "--gzip"),action="store_false",default=TRUE,
               help="gzip output files [default: TRUE]")
 )
@@ -183,11 +196,7 @@ args <- parse_args(OptionParser(usage="%prog [options] input.list",
                                 option_list=option_list),
                    positional_arguments=TRUE)
 INFILE <- args$args[1]
-noplot <- args$options$noplot
 gzip <- args$options$gzip
-if(is.null(OUTDIR)){
-  OUTDIR <- ""
-}
 
 #Checks for appropriate positional arguments
 if(length(args$args) != 1){
@@ -204,7 +213,8 @@ out.paths <- as.character(OUTFILE[,3])
 out.paths <- gsub(".gz$","",out.paths,fixed=F,ignore.case=F)
 
 #Read coverage files
-cov.dat <- readBinCovList(cov.paths,norm=F)
+cov.dat <- readBinCovList(cov.paths,norm=F,returnCoords=F)
+cov.coords <- readBinCovList(cov.paths,returnCoords=T)
 GC.dat <- readBinCovList(GC.paths,norm=F)
 
 #Calculate library-wide mean coverage for autosomes only
@@ -212,7 +222,7 @@ cov.mean <- binCovListMean(cov.dat,exclude=c("X","Y"))
 
 #Run GC correction, smooth, and round to nearest whole integer for all autosomes
 cov.dat.adj <- cov.dat
-cov.dat.adj[1:24] <- lapply(1:24,function(i){
+cov.dat.adj[1:length(cov.dat)] <- lapply(1:length(cov.dat),function(i){
   #Compute coverage residuals
   #Allosomes: scale to mean coverage of that contig
   #Otherwise: scale to library-wide autosomal mean
@@ -239,7 +249,17 @@ cov.dat.adj[1:24] <- lapply(1:24,function(i){
   return(vals.adj.round)
 })
 
-
-
-
-
+#Iterate over contigs, append coordinates to normalized coverage values, and write to file
+sapply(1:length(cov.dat),function(i){
+  #Prepare output data frame
+  out.df <- cbind(cov.coords[[i]],
+                  "cov"=cov.dat.adj[[i]])
+  #Write to file
+  write.table(out.df,out.paths[i],
+              col.names=F,row.names=F,
+              sep="\t",quote=F)
+  #Gzip, if optioned
+  if(gzip==T){
+    system(paste("gzip -f ",out.paths[i],sep=""))
+  }
+})
