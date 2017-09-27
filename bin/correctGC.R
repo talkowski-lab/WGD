@@ -203,7 +203,7 @@ if(length(args$args) != 1){
 INFILE <- read.table(INFILE,header=F,sep="\t")
 cov.paths <- as.character(INFILE[,1])
 GC.paths <- as.character(INFILE[,2])
-out.paths <- as.character(OUTFILE[,3])
+out.paths <- as.character(INFILE[,3])
 
 #Remove gz extension from output paths if necessary
 out.paths <- gsub(".gz$","",out.paths,fixed=F,ignore.case=F)
