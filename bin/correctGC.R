@@ -122,7 +122,10 @@ GCBinAdjustments <- function(vals,GC,
       if(do.scaleSD==T){
         binSD <- GCstats[which(GCstats[,1]==GCbin),3]
         if(!is.na(binSD)){
-          binVals <- binVals*(scalingSD/binSD)
+          #Require a positive SD and at least 100 bins before scaling values based on SD
+          if(binSD>0 & length(binVals>=100)){
+            binVals <- binVals*(scalingSD/binSD)
+          }
         }
       }
       #Recenter binVals at scalingMean
