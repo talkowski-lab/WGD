@@ -196,17 +196,18 @@ if(length(args$args) != 1){
 
 #Read input list
 INFILE <- read.table(INFILE,header=F,sep="\t")
-cov.paths <- as.character(INFILE[,1])
-GC.paths <- as.character(INFILE[,2])
-out.paths <- as.character(INFILE[,3])
+contigs <- as.character(INFILE[,1])
+cov.paths <- as.character(INFILE[,2])
+GC.paths <- as.character(INFILE[,3])
+out.paths <- as.character(INFILE[,4])
 
 #Remove gz extension from output paths if necessary
 out.paths <- gsub(".gz$","",out.paths,fixed=F,ignore.case=F)
 
 #Read coverage files
-cov.dat <- readBinCovList(cov.paths,norm=F,returnCoords=F)
-cov.coords <- readBinCovList(cov.paths,returnCoords=T)
-GC.dat <- readBinCovList(GC.paths,norm=F)
+cov.dat <- readBinCovList(cov.paths,norm=F,labels=contigs,returnCoords=F)
+cov.coords <- readBinCovList(cov.paths,labels=contigs,returnCoords=T)
+GC.dat <- readBinCovList(GC.paths,labels=contigs,norm=F)
 
 #Calculate library-wide mean coverage for autosomes only
 cov.mean <- binCovListMean(cov.dat,exclude=c("X","Y"))
