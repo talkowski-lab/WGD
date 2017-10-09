@@ -1,0 +1,15 @@
+*
+HCC_sm is a smaller version of the HCC directory, reporting the chromosome and 
+reads for only the first 20 Mb of chromosome 1. Using files from this directory 
+should allow the example file to run on personal computers with approximately 6G memory. 
+*
+
+We publish reads from chromosome 1 of the HCC1569 breast cancer cell line. 
+After unzipping, the data consists of 2 read files (HCC1569_chr1_sm_fwd.cln, HCC1569_chr1_sm_rev.cln)
+and 2 fasta files - the chromosome and the repeats (45 bp reads) file - describing the first 20 Mb of 
+human chromosome 1. 
+A few notes: 1. The fragment lengths are wrong, and need to be extended by 45 bps. 
+             2. The chromosome files are based on the NCBI build 36 (h_sapiens_asm)
+	     3. As this is a cancer cell, it has large CN deviations. 
+                Try estimating the GC curves on regions with relatively little 
+                CN changes to see if this matters. Data from 10-50 M should be enough for 

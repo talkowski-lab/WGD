@@ -4,7 +4,7 @@
 # Distributed under terms of the MIT license.
 
 # Script to correct for GC content across a list of binCov files
-# Note: Designed to be run on all 24 chromosome-split files from the same library
+# Note: Designed to be run on 24 chromosome-split files from the same library
 
 #Requires tab-delimmed input file with the following columns:
 # 1: full paths to binCov files for each contig
@@ -72,7 +72,7 @@ GCBinAdjustments <- function(vals,GC,
                              scalingMean=NULL,scalingSD=NULL,
                              do.scaleSD=T){
   #Round GC to integers
-  GC <- as.numeric(round(100*GC))
+  GC <- as.integer(as.character(round(as.numeric(100*GC))))
 
   #Determine cutoffs for middle 95% of coverage data and GC data
   # after excluding bins with zero coverage
@@ -101,7 +101,7 @@ GCBinAdjustments <- function(vals,GC,
     #Only consider weighted mean of bin SDs from
     # middle 95% of GC values to protect against extreme outliers
     GC.dat.tmp <- GCstats[which(GCstats[,1]>=GC.thresh[1] & GCstats[,1]<=GC.thresh[2]),c(3,4)]
-    scalingSD <- sum(GC.dat.tmp[,1]*GC.dat.tmp[,2])/sum(GC.dat.tmp[,2])
+    scalingSD <- sum(GC.dat.tmp[,1]*GC.dat.tmp[,2],na.rm=T)/sum(GC.dat.tmp[,2],na.rm=T)
   }
 
   #Iterate over all values and adjust vs. GCstats
@@ -111,8 +111,9 @@ GCBinAdjustments <- function(vals,GC,
     #Get all values corresponding to each bin
     binVals <- newVals[which(GC==GCbin)]
     if(length(binVals)>0){
-      #Compute mean after excluding top & bottom 2.5% of binVals
-      cutoff <- quantile(binVals[which(binVals>0)],probs=c(0.025,0.975),na.rm=T)
+      #Compute mean after excluding outliers (Median±1.5*IQR)
+      cutoff <- c(median(binVals[which(binVals>0)])-1.5*IQR(binVals[which(binVals>0)]),
+                  median(binVals[which(binVals>0)])+1.5*IQR(binVals[which(binVals>0)]))
       binMean <- mean(binVals[which(binVals>=cutoff[1] & binVals<=cutoff[2])],na.rm=T)
       #Center binVals
       if(!is.na(binMean)){
