@@ -971,35 +971,35 @@ if(length(args$args) != 1){
 }
 
 #Clean arguments & options
-# INFILE <- args$args[1]
-# nPCs <- args$options$dimensions
-# batch.min <- args$options$minBatch
-# batch.max <- args$options$batchMax
-# batch.ideal <- args$options$batchSize
-# OUTDIR <- args$options$OUTDIR
-# plot <- !(args$options$noplot)
-# gzip <- args$options$gzip
-# if(is.null(OUTDIR)){
-#   OUTDIR <- "./"
-# }
+INFILE <- args$args[1]
+nPCs <- args$options$dimensions
+batch.min <- args$options$minBatch
+batch.max <- args$options$batchMax
+batch.ideal <- args$options$batchSize
+OUTDIR <- args$options$OUTDIR
+plot <- !(args$options$noplot)
+gzip <- args$options$gzip
+if(is.null(OUTDIR)){
+  OUTDIR <- "./"
+}
 
-##DEV TEST RUN (on local machine)
-INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
-plot <- T
-nPCs <- 8
-batch.min <- 60
-batch.max <- 150
-batch.ideal <- 100
-OUTDIR <- "~/scratch/WGDmodel_testing/"
-plot <- T
-gzip <- T
+# ##DEV TEST RUN (on local machine)
+# INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
+# plot <- T
+# nPCs <- 8
+# batch.min <- 60
+# batch.max <- 150
+# batch.ideal <- 100
+# OUTDIR <- "~/scratch/WGDmodel_testing/"
+# plot <- T
+# gzip <- T
 
 #Create OUTDIR if it doesn't already exist
 if(!dir.exists(OUTDIR)){
   dir.create(OUTDIR)
 }
 
-#####PART 1: DATA PROCESSING
+#####PART 1: DATA PROCESSING#####
 #Read, normalize, and clean coverage data
 dat <- readMatrix(INFILE)
 dat <- normalizeContigsPerSample(dat,exclude=c("X","Y"),ploidy=2)
@@ -1007,7 +1007,7 @@ dat <- filterZeroBins(dat)
 chr.dat <- medianPerContigPerSample(dat)
 # chr.dat.norm <- normalizeContigsPerMatrix(chr.dat,scale.exclude=c("X","Y"))
 
-#####PART 2: DOSAGE-BASED BATCHING
+#####PART 2: DOSAGE-BASED BATCHING#####
 #Perform PCA on full matrix
 PCs <- binCovPCA(dat,exclude=c("X","Y"),topPCs=nPCs)
 
@@ -1063,7 +1063,7 @@ if(gzip==T){
   system(paste("gzip -f ",OUTDIR,"/batch_center_coordinates.txt",sep=""),intern=F,wait=F)
 }
 
-#####PART 3: SEX ASSIGNMENT
+#####PART 3: SEX ASSIGNMENT#####
 #Set sex assignment table
 sexAssign.df <- data.frame("CN.X"=c(1,2,1,3,2,1),
                            "CN.Y"=c(1,0,0,0,1,2),
@@ -1097,6 +1097,7 @@ if(length(sex.NAs)==0){
   chr.dat.females <- chr.dat[c(sex.females,sex.NAs.second),]
 }
 
+#####PART 4: CNA/CNV SCREEN#####
 #Plot CN per contig - Males
 png(paste(OUTDIR,"/estimated_CN_per_contig.chrX_lessThan_2copies.with_contours.png",sep=""),
     height=1250,width=2500,res=300)
@@ -1218,46 +1219,49 @@ sapply(intersect(unique(dat[,1]),c("X","Y")),function(contig){
 })
 
 #Generate p-values, q-values, and rounded CNs for males/females for per-bin
-males.p <- testCNs(chr.dat.males,FDR=F)
-males.q <- testCNs(chr.dat.males,FDR=T)
-males.CN <- chr.dat.males
-males.CN[,-1] <- apply(males.CN[,-1],2,round,digits=2)
-females.p <- testCNs(chr.dat.females,FDR=F)
-females.q <- testCNs(chr.dat.females,FDR=T)
-females.CN <- chr.dat.females
-females.CN[,-1] <- apply(females.CN[,-1],2,round,digits=2)
+males.binwise.p <- testCNs(binwise.dat.males,FDR=F)
+males.binwise.q <- testCNs(binwise.dat.males,FDR=T)
+males.binwise.CN <- binwise.dat.males
+males.binwise.CN[,-1] <- apply(males.binwise.CN[,-1],2,round,digits=2)
+females.binwise.p <- testCNs(binwise.dat.females,FDR=F)
+females.binwise.q <- testCNs(binwise.dat.females,FDR=T)
+females.binwise.CN <- binwise.dat.females
+females.binwise.CN[,-1] <- apply(females.binwise.CN[,-1],2,round,digits=2)
 
 #Merge male/female p-values and rounded CNs
-merged.p <- rbind(males.p,females.p)
+merged.p <- rbind(males.binwise.p,females.binwise.p)
 merged.p <- merged.p[match(colnames(dat)[-c(1:3)],merged.p$ID),]
-colnames(merged.p) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_pValue",sep=""))
-merged.q <- rbind(males.q,females.q)
+merged.p <- t(merged.p)
+merged.p <- cbind(dat[,1:3],merged.p[-1,])
+colnames(merged.p)[1] <- c("#Chr")
+merged.q <- rbind(males.binwise.q,females.binwise.q)
 merged.q <- merged.q[match(colnames(dat)[-c(1:3)],merged.q$ID),]
-colnames(merged.q) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_qValue",sep=""))
-merged.CN <- rbind(males.CN,females.CN)
+merged.q <- t(merged.q)
+merged.q <- cbind(dat[,1:3],merged.q[-1,])
+colnames(merged.q)[1] <- c("#Chr")
+merged.CN <- rbind(males.binwise.CN,females.binwise.CN)
 merged.CN <- merged.CN[match(colnames(dat)[-c(1:3)],merged.CN$ID),]
-colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
+merged.CN <- t(merged.CN)
+merged.CN <- cbind(dat[,1:3],merged.CN[-1,])
+colnames(merged.CN)[1] <- c("#Chr")
 
 #Write merged p-values
-write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
+write.table(merged.p,paste(OUTDIR,"/binwise_CNV_pValues.bed",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/CNA_pValues.txt",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/binwise_CNV_pValues.bed",sep=""),intern=F,wait=F)
 }
 
 #Write merged q-values
-write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
+write.table(merged.q,paste(OUTDIR,"/binwise_CNV_qValues.bed",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/CNA_qValues.txt",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/binwise_CNV_qValues.bed",sep=""),intern=F,wait=F)
 }
 
 #Write merged copy number estimates
-write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
+write.table(merged.CN,paste(OUTDIR,"/binwise_estimated_copy_numbers.bed",sep=""),
             col.names=T,row.names=F,sep="\t",quote=F)
 if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/estimated_copy_numbers.txt",sep=""),intern=F,wait=F)
+  system(paste("gzip -f ",OUTDIR,"/binwise_estimated_copy_numbers.bed",sep=""),intern=F,wait=F)
 }
-
-
-
