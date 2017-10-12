@@ -36,7 +36,8 @@ normalizeContigsPerSample <- function(mat,exclude=c("X","Y"),ploidy=2){
   #Iterate over all samples and scale each sample by median and center/scale to expected ploidy
   mat[,-c(1:3)] <- sapply(4:ncol(mat),function(i){
     #Compute median of values excluding current value & any other specified
-    excl.median <- median(mat[which(!(mat[,1] %in% exclude)),i],na.rm=T)
+    sampVals <- as.vector(mat[which(!(mat[,1] %in% exclude)),i])
+    excl.median <- median(sampVals[which(sampVals>0)],na.rm=T)
 
     #Normalize values by excl.median
     newVals <- mat[,i]/excl.median
@@ -50,6 +51,24 @@ normalizeContigsPerSample <- function(mat,exclude=c("X","Y"),ploidy=2){
 
   #Return normalized matrix
   return(mat)
+}
+
+###########################################################################
+#####Helper function to remove rows where >X% of samples have <=Y% coverage
+###########################################################################
+filterZeroBins <- function(mat,exclude=c("X","Y"),minSamp=0.05,minCov=0.05){
+  #Convert vals to numeric
+  mat[,-c(1:3)] <- apply(mat[,-c(1:3)],2,as.numeric)
+
+  #Find bins where >frac% of samples have coverage=0
+  nZeros <- apply(mat[,-c(1:3)],1,function(vals){
+    return(length(which(vals<=minCov)))
+  })
+  fracZeros <- nZeros/(ncol(mat)-3)
+  keep.bins <- which(fracZeros<=minSamp | mat[,1] %in% exclude)
+
+  #Return subsetted matrix
+  return(mat[keep.bins,])
 }
 
 ##################################################
@@ -774,7 +793,7 @@ assignSex <- function(dat,sexChr=24:25,
 ###############################################################
 boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
                               contigLabels=paste("chr",c(1:22,"X","Y"),sep=""),
-                              colorSignif=T,connect=F){
+                              colorSignif=T,connect=F,boxes=T){
   #Load library
   require(beeswarm)
 
@@ -871,14 +890,16 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
   })
 
   #Add boxplots
-  if(!is.na(exclude)){
-    boxplot(dat[,-c(1,exclude)],at=(1:(ncol(dat)-1))[-c(exclude-1)]-0.5,
-            add=T,outline=F,col=NA,lwd=0.75,lty=1,staplewex=0,
-            yaxt="n",xaxt="n",ylab="",xlab="")
-  }else{
-    boxplot(dat[,-1],at=(1:(ncol(dat)-1))-0.5,
-            add=T,outline=F,col=NA,lwd=0.75,lty=1,staplewex=0,
-            yaxt="n",xaxt="n",ylab="",xlab="")
+  if(boxes==T){
+    if(!is.na(exclude)){
+      boxplot(dat[,-c(1,exclude)],at=(1:(ncol(dat)-1))[-c(exclude-1)]-0.5,
+              add=T,outline=F,col=NA,lwd=0.75,lty=1,staplewex=0,
+              yaxt="n",xaxt="n",ylab="",xlab="")
+    }else{
+      boxplot(dat[,-1],at=(1:(ncol(dat)-1))-0.5,
+              add=T,outline=F,col=NA,lwd=0.75,lty=1,staplewex=0,
+              yaxt="n",xaxt="n",ylab="",xlab="")
+    }
   }
 
   #Add x-axis labels
@@ -942,22 +963,22 @@ args <- parse_args(OptionParser(usage="%prog [options] median_coverage_matrix",
                    positional_arguments=TRUE)
 
 #Sanity-check arguments
-# if(length(args$args) != 1){
-#   stop("Must supply an input median coverage matrix\n")
-# }
+if(length(args$args) != 1){
+  stop("Must supply an input median coverage matrix\n")
+}
 
 #Clean arguments & options
-INFILE <- args$args[1]
-nPCs <- args$options$dimensions
-batch.min <- args$options$minBatch
-batch.max <- args$options$batchMax
-batch.ideal <- args$options$batchSize
-OUTDIR <- args$options$OUTDIR
-plot <- !(args$options$noplot)
-gzip <- args$options$gzip
-if(is.null(OUTDIR)){
-  OUTDIR <- "./"
-}
+# INFILE <- args$args[1]
+# nPCs <- args$options$dimensions
+# batch.min <- args$options$minBatch
+# batch.max <- args$options$batchMax
+# batch.ideal <- args$options$batchSize
+# OUTDIR <- args$options$OUTDIR
+# plot <- !(args$options$noplot)
+# gzip <- args$options$gzip
+# if(is.null(OUTDIR)){
+#   OUTDIR <- "./"
+# }
 
 ##DEV TEST RUN (on local machine)
 INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
@@ -976,11 +997,12 @@ if(!dir.exists(OUTDIR)){
 }
 
 #####PART 1: DATA PROCESSING
-#Read & normalize coverage data
+#Read, normalize, and clean coverage data
 dat <- readMatrix(INFILE)
 dat <- normalizeContigsPerSample(dat,exclude=c("X","Y"),ploidy=2)
+dat <- filterZeroBins(dat)
 chr.dat <- medianPerContigPerSample(dat)
-chr.dat.norm <- normalizeContigsPerMatrix(chr.dat,scale.exclude=c("X","Y"))
+# chr.dat.norm <- normalizeContigsPerMatrix(chr.dat,scale.exclude=c("X","Y"))
 
 #####PART 2: DOSAGE-BASED BATCHING
 #Perform PCA on full matrix
@@ -1048,7 +1070,10 @@ sexAssign.df <- data.frame("CN.X"=c(1,2,1,3,2,1),
                                      "#7B2AB3","#FF6A09","#29840f"))
 
 #Assign sexes
+png(paste(OUTDIR,"/sex_assignments.png",sep=""),
+    height=1500,width=1500,res=300)
 sexes <- assignSex(chr.dat,plot=T,sexAssign.df=sexAssign.df)
+dev.off()
 
 #Split data by chrX copy number (≥2 or <2) & evenly distribute NAs among M & F
 sex.males <- as.vector(which(round(as.numeric(sexes$chrX.CN,0))<2 & !is.na(sexes$chrX.CN)))
@@ -1069,16 +1094,6 @@ if(length(sex.NAs)==0){
   chr.dat.females <- chr.dat[c(sex.females,sex.NAs.second),]
 }
 
-# #Normalize CN - males & females separately
-# t.chr.dat.males <- data.frame("chr"=colnames(chr.dat)[-1],
-#                 "start"=rep(1,times=ncol(chr.dat)-1),
-#                 "end"=rep(2,times=ncol(chr.dat)-1),
-#                 t(chr.dat.males)[-1,])
-# chr.dat.males.norm <- normalizeContigsPerMatrix(t.chr.dat.males,exclude=24:25,scale.exclude=NA,
-#                                         genome.ploidy=2,contig.ploidy=c(rep(2,22),1,1))
-# chr.dat.females.norm <- normalizeContigsPerMatrix(chr.dat.females,exclude=24:25,scale.exclude=NA,
-#                                           genome.ploidy=2,contig.ploidy=c(rep(2,22),2,0))
-
 #Plot CN per contig - Males
 png(paste(OUTDIR,"/estimated_CN_per_contig.chrX_lessThan_2copies.with_contours.png",sep=""),
     height=1250,width=2500,res=300)
@@ -1086,7 +1101,7 @@ boxplotsPerContig(chr.dat.males,exclude=NA,contig.ploidy=c(rep(2,22),1,1),connec
 dev.off()
 png(paste(OUTDIR,"/estimated_CN_per_contig.chrX_lessThan_2copies.no_contours.png",sep=""),
     height=1250,width=2500,res=300)
-boxplotsPerContig(chr.dat.females,exclude=NA,contig.ploidy=c(rep(2,22),1,1),connect=F)
+boxplotsPerContig(chr.dat.males,exclude=NA,contig.ploidy=c(rep(2,22),1,1),connect=F)
 dev.off()
 
 #Plot CN per contig - Females
@@ -1099,74 +1114,64 @@ png(paste(OUTDIR,"/estimated_CN_per_contig.chrX_atLeast_2copies.no_contours.png"
 boxplotsPerContig(chr.dat.females,exclude=NA,contig.ploidy=c(rep(2,22),2,0),connect=F)
 dev.off()
 
-# #Recombine independently normalized data by sex & reassign sexes
-# merged.norm <- rbind(males.norm,females.norm)
-#
-# #Plots sex assignment dotplot
-# png(paste(OUTDIR,"/sex_assignments.png",sep=""),
-#     height=1500,width=1500,res=300)
-# sexes <- assignSex(merged.norm,sexAssign.df=sexAssign.df)
-# dev.off()
-#
-# #Write table of sexes
-# sexes <- sexes[match(dat$ID,sexes$ID),]
-# colnames(sexes)[1] <- "#ID"
-# write.table(sexes,paste(OUTDIR,"/sample_sex_assignments.txt",sep=""),
-#             col.names=T,row.names=F,sep="\t",quote=F)
-# if(gzip==T){
-#   system(paste("gzip -f ",OUTDIR,"/sample_sex_assignments.txt",sep=""),intern=F,wait=F)
-# }
-#
-# #Generate p-values, q-values, and rounded CNs for males/females
-# males.p <- testCNs(males.norm,FDR=F)
-# males.q <- testCNs(males.norm,FDR=T)
-# males.CN <- males.norm
-# males.CN[,-1] <- apply(males.CN[,-1],2,round,digits=2)
-# females.p <- testCNs(females.norm,FDR=F)
-# females.q <- testCNs(females.norm,FDR=T)
-# females.CN <- females.norm
-# females.CN[,-1] <- apply(females.CN[,-1],2,round,digits=2)
-#
-# #Merge male/female p-values and rounded CNs
-# merged.p <- rbind(males.p,females.p)
-# merged.p <- merged.p[match(dat$ID,merged.p$ID),]
-# colnames(merged.p) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_pValue",sep=""))
-# merged.q <- rbind(males.q,females.q)
-# merged.q <- merged.q[match(dat$ID,merged.q$ID),]
-# colnames(merged.q) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_qValue",sep=""))
-# merged.CN <- rbind(males.CN,females.CN)
-# merged.CN <- merged.CN[match(dat$ID,merged.CN$ID),]
-# colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
-#
-# #Write merged p-values
-# write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
-#             col.names=T,row.names=F,sep="\t",quote=F)
-# if(gzip==T){
-#   system(paste("gzip -f ",OUTDIR,"/CNA_pValues.txt",sep=""),intern=F,wait=F)
-# }
-#
-# #Write merged q-values
-# write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
-#             col.names=T,row.names=F,sep="\t",quote=F)
-# if(gzip==T){
-#   system(paste("gzip -f ",OUTDIR,"/CNA_qValues.txt",sep=""),intern=F,wait=F)
-# }
-#
-# #Write merged copy number estimates
-# write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
-#             col.names=T,row.names=F,sep="\t",quote=F)
-# if(gzip==T){
-#   system(paste("gzip -f ",OUTDIR,"/estimated_copy_numbers.txt",sep=""),intern=F,wait=F)
-# }
+#Plot CN per contig - all samples
+png(paste(OUTDIR,"/estimated_CN_per_contig.all_samples.with_contours.png",sep=""),
+    height=1250,width=2500,res=300)
+boxplotsPerContig(chr.dat,exclude=NA,contig.ploidy=c(rep(2,22),2,0),connect=T,boxes=F)
+dev.off()
+png(paste(OUTDIR,"/estimated_CN_per_contig.all_samples.no_contours.png",sep=""),
+    height=1250,width=2500,res=300)
+boxplotsPerContig(chr.dat,exclude=NA,contig.ploidy=c(rep(2,22),2,0),connect=F,boxes=F)
+dev.off()
 
+#Write table of sexes
+sexes <- sexes[match(colnames(dat)[-c(1:3)],sexes$ID),]
+colnames(sexes)[1] <- "#ID"
+write.table(sexes,paste(OUTDIR,"/sample_sex_assignments.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/sample_sex_assignments.txt",sep=""),intern=F,wait=F)
+}
 
+#Generate p-values, q-values, and rounded CNs for males/females
+males.p <- testCNs(chr.dat.males,FDR=F)
+males.q <- testCNs(chr.dat.males,FDR=T)
+males.CN <- chr.dat.males
+males.CN[,-1] <- apply(males.CN[,-1],2,round,digits=2)
+females.p <- testCNs(chr.dat.females,FDR=F)
+females.q <- testCNs(chr.dat.females,FDR=T)
+females.CN <- chr.dat.females
+females.CN[,-1] <- apply(females.CN[,-1],2,round,digits=2)
 
+#Merge male/female p-values and rounded CNs
+merged.p <- rbind(males.p,females.p)
+merged.p <- merged.p[match(colnames(dat)[-c(1:3)],merged.p$ID),]
+colnames(merged.p) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_pValue",sep=""))
+merged.q <- rbind(males.q,females.q)
+merged.q <- merged.q[match(colnames(dat)[-c(1:3)],merged.q$ID),]
+colnames(merged.q) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_qValue",sep=""))
+merged.CN <- rbind(males.CN,females.CN)
+merged.CN <- merged.CN[match(colnames(dat)[-c(1:3)],merged.CN$ID),]
+colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
 
+#Write merged p-values
+write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/CNA_pValues.txt",sep=""),intern=F,wait=F)
+}
 
+#Write merged q-values
+write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/CNA_qValues.txt",sep=""),intern=F,wait=F)
+}
 
-
-
-
-
-
+#Write merged copy number estimates
+write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/estimated_copy_numbers.txt",sep=""),intern=F,wait=F)
+}
 
