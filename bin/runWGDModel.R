@@ -954,9 +954,9 @@ option_list <- list(
   make_option(c("-O", "--OUTDIR"),type="character",default=NULL,
               help="output directory [default: pwd]",
               metavar="character"),
-  make_option(c("-p", "--noplot"),action="store_true",default=FALSE,
+  make_option(c("--noplot"),action="store_true",default=FALSE,
               help="disable all visualization [default: %default]"),
-  make_option(c("-z", "--gzip"),action="store_false",default=TRUE,
+  make_option(c("-z", "--gzip"),action="store_true",default=FALSE,
               help="gzip output files [default: %default]")
 )
 
