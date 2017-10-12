@@ -11,64 +11,14 @@
 
 #Input: a binCov matrix of any resolution (very coarse resolution recommended, e.g. 1Mb)
 
-#DEV TEST RUN (on local machine)
-INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
-dat <- readMatrix(INFILE)
-dat <- normalizeContigsPerSample(dat,exclude=c("X","Y"),ploidy=2)
-PCs <- binCovPCA(dat,exclude=c("X","Y"))
-chr.dat <- medianPerContigPerSample(dat)
-
-#PC routine on top 20% greatest SD bins
-binwise.sd <- apply(dat[which(!(dat$Chr %in% c("X","Y"))),-c(1:3)],1,sd)
-topsd <- which(binwise.sd>quantile(binwise.sd,0.8))
-PCs.topsd <- binCovPCA(dat[topsd,])
-
-#Get bins with greatest sd
-
-chr1.topsd <- tail(order(binwise.sd[which(dat$Chr==1)]),50)
-
-#Test plot of chr1 -- uncolored
-plot(dat[which(dat$Chr==1),4],type="l",col=adjustcolor("black",alpha=0.15),ylim=c(1.5,2.5),
-     panel.first=c(abline(h=2,v=170)))
-apply(dat[which(dat$Chr==1),-c(1:4)],2,function(vals){
-  points(vals,type="l",col=adjustcolor("black",alpha=0.15))
-})
-abline(v=chr1.topsd,col="red")
-
-#Histogram of bin 170 on chr1 w/top 10% and bottom 10% of PC1
-hist(as.numeric(dat[170,-c(1:3)]),breaks=seq(0,3,0.05),col="white",xlim=c(1,2.5),
-     xlab="Estimated Copy State",ylab="Samples")
-hist(as.numeric(dat[170,which(colnames(dat) %in% PCs$ID[which(PCs$PC3<quantile(PCs$PC3,0.1))])]),
-     add=T,col=adjustcolor("red",alpha=0.3),breaks=seq(0,3,0.05))
-hist(as.numeric(dat[170,which(colnames(dat) %in% PCs$ID[which(PCs$PC3>quantile(PCs$PC3,0.9))])]),
-     add=T,col=adjustcolor("blue",alpha=0.3),breaks=seq(0,3,0.05))
-
-#Scatterplots of top 3 PCs
-par(mfrow=c(2,3))
-plot(PCs$PC1,PCs$PC2,col=c(rep("pink",400),rep("blue",400)),pch=19)
-plot(PCs$PC1,PCs$PC3,col=c(rep("pink",400),rep("blue",400)),pch=19)
-plot(PCs$PC2,PCs$PC3,col=c(rep("pink",400),rep("blue",400)),pch=19)
-plot(PCs$PC1,chr.dat$X,col=c(rep("pink",400),rep("blue",400)),pch=19)
-plot(PCs$PC2,chr.dat$X,col=c(rep("pink",400),rep("blue",400)),pch=19)
-plot(PCs$PC3,chr.dat$X,col=c(rep("pink",400),rep("blue",400)),pch=19)
-
-# sexAssign.df <- data.frame("CN.X"=c(1,2,1,3,2,1),
-#                            "CN.Y"=c(1,0,0,0,1,2),
-#                            "label"=c("MALE","FEMALE","TURNER",
-#                                      "TRIPLE X","KLINEFELTER","JACOBS"),
-#                            "color"=c("#00BFF4","#fd8eff","#e02006",
-#                                      "#7B2AB3","#FF6A09","#29840f"))
-# sexes <- assignSex(dat,sexChr=24:25,
-#                    sexAssign.df=sexAssign.df)
-
 ####################################
 #####Set parameters & load libraries
 ####################################
 options(scipen=1000,stringsAsFactors=F)
 
-###################################################
-#####Helper function to load median coverage matrix
-###################################################
+############################################
+#####Helper function to load coverage matrix
+############################################
 readMatrix <- function(INFILE){
   dat <- read.table(INFILE,comment.char="",header=T)
   colnames(dat)[1] <- "Chr"
@@ -116,7 +66,7 @@ binCovPCA <- function(dat,exclude=c("X","Y"),topPCs=10){
   out.df <- data.frame("ID"=names(dat[,-c(1:3)]))
   out.df <- cbind(out.df,PCs)
   rownames(out.df) <- 1:nrow(out.df)
-  return(out.df)
+  return(list("full"=PCA,"top"=out.df))
 }
 
 ############################################################
@@ -144,6 +94,417 @@ medianPerContigPerSample <- function(dat){
   out.df <- cbind(out.df,allMedians)
 }
 
+########################################################
+#####Helper function to PCA-cluster samples into batches
+########################################################
+clusterDosageProfiles <- function(PCs,n.min=60,n.max=150,n.ideal=100,wait.max=10,plot=T){
+  #Get desired k & target number of samples per cluster
+  k <- round(nrow(PCs)/n.ideal)
+  k.colors <- rainbow(k)
+  n.target <- round(nrow(PCs)/k)
+
+  #Reformat PC data (assumes first column is ID)
+  rownames(PCs) <- PCs[,1]
+  PCs <- as.data.frame(PCs[,-1])
+
+  #Initial k-means clustering
+  clust.init <- kmeans(PCs,centers=k)
+  clust <- clust.init
+  centers.init <- clust$centers
+  centers.prev <- centers.init
+  centers <- centers.init
+
+  #Initialize PC1 vs PC2 plot
+  if(plot==T){
+    layout(matrix(c(1,2,5,3,4,5),nrow=2,byrow=T),widths=c(3,3,1))
+    plot(PCs[,1],PCs[,2],pch=19,cex=0.2,
+         main="Center Progression",xlab="PC1",ylab="PC2")
+    points(centers.init[,1],centers.init[,2],pch=21,bg=k.colors)
+  }
+
+  #Adjust cluster centers
+  #Loop until no clusters are > n.max or are < n.min,
+  # or cluster centers stop moving after at least wait.max tries
+  j=0
+  while(any(clust$size<n.min | clust$size>n.max) & !(j>=wait.max & all(centers-centers.prev==0))){
+    #Calculate distance between each sample and cluster centers
+    samp.dist <- as.data.frame(t(apply(PCs,1,function(vals){
+      #Iterate over clusters
+      apply(centers,1,function(clusterCoords){
+        dist(rbind(vals,clusterCoords))
+      })
+    })))
+
+    #Iterate over all clusters, add/subtract samples up to n.min/n.max, and recompute cluster center
+    centers <- as.data.frame(t(sapply(1:nrow(centers),function(i){
+      #Check if cluster is too small
+      if(clust$size[i]<n.min){
+        #Get closest n.min samples
+        nuc <- head(order(samp.dist[,i]),n.min)
+        #Compute new cluster center coordinates & assign to centers df
+        new.cent <- apply(PCs[nuc,],2,mean)
+      }else{
+        #Check if cluster is too large
+        if(clust$size[i]>n.max){
+          #Get closest n.max samples
+          nuc <- head(order(samp.dist[,i]),n.max)
+          #Compute new cluster center coordinates & assign to centers df
+          new.cent <- apply(PCs[nuc,],2,mean)
+        }else{
+          #Otherwise, recompute center according to best n.target assigned samples
+          nuc <- head(order(samp.dist[,i]),n.target)
+          #Compute new cluster center coordinates & assign to centers df
+          new.cent <- apply(PCs[nuc,],2,mean)
+        }
+      }
+      return(new.cent)
+    })))
+
+    #Rerun k-means with new centers
+    clust <- kmeans(PCs,centers=centers)
+    centers <- clust$centers
+
+    #Update plot, if optioned
+    if(plot==T){
+      segments(x0=centers.prev[,1],x1=centers[,1],
+               y0=centers.prev[,2],y1=centers[,2],
+               col=k.colors)
+      points(centers[,1],centers[,2],pch=21,bg=k.colors)
+    }
+    centers.prev <- centers
+
+    #Increment counter
+    j <- j+1
+  }
+
+  #Update which clusters are small/large
+  large.clusters <- which(clust$size>n.max)
+  small.clusters <- which(clust$size<n.min)
+
+  #Calculate distance between each sample and cluster centers
+  samp.dist <- as.data.frame(t(apply(PCs,1,function(vals){
+    #Iterate over clusters
+    apply(centers,1,function(clusterCoords){
+      dist(rbind(vals,clusterCoords))
+    })
+  })))
+
+  ####Procedure to make obvious switches between large and small clusters
+  if(length(large.clusters)>0 & length(small.clusters)>0){
+    #Get list of samples with poor fits to large clusters
+    poor.fits <- unique(as.vector(sapply(large.clusters,function(i){
+      #Get all members in cluster
+      members <- which(clust$cluster==i)
+      #Order members by goodness of fit
+      members <- members[as.vector(order(PCs[as.vector(members),i]))]
+      #Return tail of members that are poorest fits to large cluster
+      as.vector(tail(members,clust$size[i]-n.max))
+    })))
+
+    #Get samples that are good fits for one (or more) small clusters
+    good.fits <- unique(as.vector(sapply(small.clusters,function(i){
+      return(as.vector(head(order(samp.dist[,i]),n.min)))
+    })))
+
+    #Reassign poor fits to good fits, if any
+    if(any(good.fits %in% poor.fits)){
+      for(i in good.fits[which(good.fits %in% poor.fits)]){
+        #Get old assignment
+        old <- clust$cluster[i]
+        #Get best fit among small clusters
+        new <- small.clusters[which(samp.dist[i,small.clusters]==min(samp.dist[i,small.clusters]))]
+        #Modify cluster assignment
+        clust$cluster[i] <- new
+      }
+    }
+
+    #Recompute cluster size & cluster centers
+    clust$size <- as.vector(table(clust$cluster))
+    clust$centers <- t(sapply(1:nrow(clust$centers),function(i){
+      apply(PCs[which(clust$cluster==i),],2,mean)
+    }))
+    centers <- clust$centers
+
+    #Update list of clusters < n.min & clusters > n.max
+    large.clusters <- which(clust$size>n.max)
+    small.clusters <- which(clust$size<n.min)
+
+    #Update plot, if optioned
+    if(plot==T){
+      segments(x0=centers.prev[,1],x1=centers[,1],
+               y0=centers.prev[,2],y1=centers[,2],
+               col=k.colors)
+      points(centers[,1],centers[,2],pch=21,bg=k.colors)
+    }
+    centers.prev <- centers
+  }
+
+  ####Procedure to reassign samples such that all clusters are > n.min
+  if(length(small.clusters)>0){
+    #Calculate distance between each sample and cluster centers
+    samp.dist <- as.data.frame(t(apply(PCs,1,function(vals){
+      #Iterate over clusters
+      apply(centers,1,function(clusterCoords){
+        dist(rbind(vals,clusterCoords))
+      })
+    })))
+
+    #Get list of best n.min samples for each cluster with ≥ n.min
+    # and all currently assigned samples for each cluster < n.min
+    #These samples cannot be reassigned in the subsequent step
+    no.swap <- unique(as.vector(sapply(which(clust$size>=n.min),function(i){
+      #Get samples assigned to cluster
+      members <- which(clust$cluster==i)
+      #Order members by distance to cluster center & return top n.min
+      return(as.vector(head(members[order(samp.dist[members,i])],n.min)))
+    })))
+    no.swap <- unique(c(no.swap,which(clust$cluster %in% small.clusters)))
+
+    #Rank samples available for reassignment in terms of best fit for each cluster < n.min
+    reassign.ranks <- apply(as.data.frame(samp.dist[-no.swap,small.clusters]),2,rank,ties.method="random")
+    reassign.ranks <- reassign.ranks[order(apply(reassign.ranks,1,min)),]
+
+    #Iterate over ranked reassignable samples
+    #For each sample, check if the preferred fit is still < n.min
+    #If so, reassign it to that cluster. If not, skip it
+    #After each sample, recompute cluster sizes
+    if(nrow(reassign.ranks)>0){
+      l <- 1
+      while(any(clust$size<n.min) & k<nrow(reassign.ranks)){
+        #Get original sample index
+        idx <- which(rownames(PCs)==rownames(reassign.ranks)[l])
+        #Get preferred assignment for sample
+        pref <- sample(small.clusters[which(reassign.ranks[l,]==min(reassign.ranks[l,]))],1)
+        #Check if that cluster still needs samples
+        if(clust$size[pref]<n.min){
+          #If yes, reassign
+          clust$cluster[idx] <- pref
+        }
+        #Recompute cluster sizes
+        clust$size <- as.vector(table(clust$cluster))
+        #Update counter
+        l <- l+1
+      }
+    }
+
+    #Recompute cluster size & cluster centers
+    clust$size <- as.vector(table(clust$cluster))
+    clust$centers <- t(sapply(1:nrow(clust$centers),function(i){
+      apply(PCs[which(clust$cluster==i),],2,mean)
+    }))
+    centers <- clust$centers
+
+    #Update plot, if optioned
+    if(plot==T){
+      segments(x0=centers.prev[,1],x1=centers[,1],
+               y0=centers.prev[,2],y1=centers[,2],
+               col=k.colors)
+      points(centers[,1],centers[,2],pch=21,bg=k.colors)
+    }
+    centers.prev <- centers
+  }
+
+  #Recompute cluster size & cluster centers
+  clust$size <- as.vector(table(clust$cluster))
+  clust$centers <- t(sapply(1:nrow(clust$centers),function(i){
+    apply(PCs[which(clust$cluster==i),],2,mean)
+  }))
+  centers <- clust$centers
+
+  #Recompute sample distance to cluster centers
+  samp.dist <- as.data.frame(t(apply(PCs,1,function(vals){
+    #Iterate over clusters
+    apply(centers,1,function(clusterCoords){
+      dist(rbind(vals,clusterCoords))
+    })
+  })))
+
+  #Update list of clusters > n.max
+  large.clusters <- which(clust$size>n.max)
+  small.clusters <- which(clust$size<n.min)
+
+  ####Procedure to reassign samples such that all clusters are < n.max
+  if(length(large.clusters>0)){
+    #Get list of worst samples for each cluster with ≥ n.min
+    # such that each cluster retains exactly n.max samples
+    #These samples will be reassigned in the subsequent step
+    swappable <- unique(as.vector(unlist(sapply(large.clusters,function(i){
+      #Get samples assigned to cluster
+      members <- which(clust$cluster==i)
+      #Order members by distance to cluster center & return worst samples after skipping n.max
+      return(as.vector(tail(members[order(samp.dist[members,i])],clust$size[i]-n.max)))
+    }))))
+
+    #Rank samples available for reassignment in terms of best fit for each cluster < n.min
+    if(length(swappable)>0){
+      reassign.ranks <- apply(as.data.frame(samp.dist[swappable,-large.clusters]),2,rank,ties.method="random")
+      reassign.ranks <- reassign.ranks[order(apply(reassign.ranks,1,min)),]
+    }
+
+    #Iterate over ranked reassignable samples
+    #For each sample, reassign to top ranked preferred fit
+    # as long as reassignment does bring preferred fit to > n.max
+    #After each sample, recompute cluster sizes
+    if(nrow(reassign.ranks)>0){
+      for(l in 1:nrow(reassign.ranks)){
+        #Get original sample index
+        idx <- which(rownames(PCs)==rownames(reassign.ranks)[l])
+        #Rank possible sample assignments by distance
+        pref <- (1:nrow(centers))[-large.clusters][order(reassign.ranks[l,])]
+        #Assign to top preferred cluster, provided that cluster isn't > n.max
+        new <- head(pref[pref %in% which(clust$size<n.max)],1)
+        clust$cluster[idx] <- new
+        #Recompute cluster sizes
+        clust$size <- as.vector(table(clust$cluster))
+      }
+    }
+
+    #Recompute cluster size & cluster centers
+    clust$size <- as.vector(table(clust$cluster))
+    clust$centers <- t(sapply(1:nrow(clust$centers),function(i){
+      apply(PCs[which(clust$cluster==i),],2,mean)
+    }))
+    centers <- clust$centers
+
+    #Update plot, if optioned
+    if(plot==T){
+      segments(x0=centers.prev[,1],x1=centers[,1],
+               y0=centers.prev[,2],y1=centers[,2],
+               col=k.colors)
+      points(centers[,1],centers[,2],pch=21,bg=k.colors)
+    }
+    centers.prev <- centers
+  }
+
+  #Recompute cluster size & cluster centers
+  clust$size <- as.vector(table(clust$cluster))
+  clust$centers <- t(sapply(1:nrow(clust$centers),function(i){
+    apply(PCs[which(clust$cluster==i),],2,mean)
+  }))
+  centers <- clust$centers
+
+  #Recompute sample distance to cluster centers
+  samp.dist <- as.data.frame(t(apply(PCs,1,function(vals){
+    #Iterate over clusters
+    apply(centers,1,function(clusterCoords){
+      dist(rbind(vals,clusterCoords))
+    })
+  })))
+
+  ####Final optimization
+  #Iterate wait.max times
+  j <- 0
+  while(j<wait.max){
+    #Rank matches for each sample vs all clusters
+    final.ranks <- as.data.frame(apply(samp.dist,2,rank,ties.method="random"))
+    final.ranks <- final.ranks[order(apply(final.ranks,1,min)),]
+    final.ranks <- as.data.frame(t(apply(final.ranks,1,rank,ties.method="random")))
+    #Subset to samples that aren't already assigned to their top preference
+    samples.to.switch <- sapply(1:nrow(final.ranks),function(i){
+      #Get original sample index
+      idx <- which(rownames(PCs)==rownames(final.ranks)[i])
+      #Get current & preferred assignment for sample
+      current <- clust$cluster[idx]
+      pref <- which(final.ranks[i,]==min(final.ranks[i,]))
+      #Return sample if pref != current
+      if(pref!=current){
+        return(i)
+      }else{
+        return(NA)
+      }
+    })
+    samples.to.switch <- samples.to.switch[which(!is.na(samples.to.switch))]
+    final.ranks <- final.ranks[samples.to.switch,]
+    #Iterate over all samples that aren't already assigned to
+    # their top preference. If sample fits another cluster better,
+    # and wouldn't bring the current cluster < n.min,
+    # or the new cluster > n.max, reassign that sample
+    if(nrow(final.ranks)>0){
+      for(l in 1:nrow(final.ranks)){
+        #Get original sample index
+        idx <- which(rownames(PCs)==rownames(final.ranks)[l])
+        #Get current assignment for sample
+        current <- clust$cluster[idx]
+        #Try to assign to any cluster with higher priority than current
+        if(final.ranks[l,current]>1){
+          #Only try if current cluster > n.min
+          if(clust$size[current] > n.min){
+            #Get ordered list of all better options
+            pref <- order(final.ranks[l,])[which(final.ranks[l,]<final.ranks[l,current])]
+            for(t in pref){
+              #Reassign if preferred cluster < n.max
+              if(clust$size[t] < n.max){
+                clust$cluster[idx] <- t
+                break
+              }
+            }
+          }
+        }
+        #Recompute cluster sizes after each sample
+        clust$size <- as.vector(table(clust$cluster))
+      }
+    }
+
+    #Recompute cluster size & cluster centers
+    clust$size <- as.vector(table(clust$cluster))
+    clust$centers <- t(sapply(1:nrow(clust$centers),function(i){
+      apply(PCs[which(clust$cluster==i),],2,mean)
+    }))
+    centers <- clust$centers
+
+    #Recompute sample distance to cluster centers
+    samp.dist <- as.data.frame(t(apply(PCs,1,function(vals){
+      #Iterate over clusters
+      apply(centers,1,function(clusterCoords){
+        dist(rbind(vals,clusterCoords))
+      })
+    })))
+
+    #Update counter
+    j <- j+1
+  }
+
+  #Recompute cluster size & cluster centers
+  clust$size <- as.vector(table(clust$cluster))
+  clust$centers <- t(sapply(1:nrow(clust$centers),function(i){
+    apply(PCs[which(clust$cluster==i),],2,mean)
+  }))
+  centers <- clust$centers
+
+  #Update plot, if optioned
+  if(plot==T){
+    segments(x0=centers.prev[,1],x1=centers[,1],
+             y0=centers.prev[,2],y1=centers[,2],
+             col=k.colors)
+    points(centers[,1],centers[,2],pch=23,cex=2,bg=k.colors)
+  }
+  centers.prev <- centers
+
+  #Master PCA plot at end of first three PCs colored by cluster
+  if(plot==T){
+    plot(PCs$PC1,PCs$PC2,col=k.colors[clust$cluster],pch=19,cex=0.75,
+         main="PC1 vs. PC2",xlab="PC1",ylab="PC2")
+    points(centers[,1],centers[,2],pch=23,bg=k.colors,cex=2)
+    plot(PCs$PC1,PCs$PC3,col=k.colors[clust$cluster],pch=19,cex=0.75,
+         main="PC1 vs. PC3",xlab="PC1",ylab="PC3")
+    points(centers[,1],centers[,3],pch=23,bg=k.colors,cex=2)
+    plot(PCs$PC2,PCs$PC3,col=k.colors[clust$cluster],pch=19,cex=0.75,
+         main="PC2 vs. PC3",xlab="PC2",ylab="PC3")
+    points(centers[,2],centers[,3],pch=23,bg=k.colors,cex=2)
+    #Legend
+    par(bty="n",mar=c(4,0.2,4,0.2))
+    plot(x=rep(1,times=length(clust$size)),y=1:length(clust$size),
+         xlim=c(0.5,4),ylim=c(0,length(clust$size)+1),
+         col=k.colors,pch=19,cex=2,
+         xaxt="n",yaxt="n",xlab="",ylab="")
+    text(x=rep(1,times=length(clust$size)),y=1:length(clust$size),
+         pos=4,labels=paste("N=",clust$size,sep=""))
+  }
+
+  #Return cluster assignments & centers
+  out <- list("batch"=clust$cluster,"cluster.centers"=clust$centers)
+  return(out)
+}
 
 # #########################################################################
 # #####Helper function to normalize contigs for an entire matrix of samples
@@ -551,47 +912,112 @@ medianPerContigPerSample <- function(dat){
 # ##########################
 # #####Rscript functionality
 # ##########################
-# require(optparse)
-# #List of command-line options
-# option_list <- list(
-#   make_option(c("-O", "--OUTDIR"),type="character",default=NULL,
-#               help="output directory [default: pwd]",
-#               metavar="character"),
-#   make_option(c("-p", "--noplot"),action="store_true",default=FALSE,
-#               help="disable copy number visualization [default: FALSE]"),
-#   make_option(c("-z", "--gzip"),action="store_false",default=TRUE,
-#               help="gzip output files [default: TRUE]")
-# )
-#
-# #Get command-line arguments & options
-# args <- parse_args(OptionParser(usage="%prog [options] median_coverage_matrix",
-#                                 option_list=option_list),
-#                    positional_arguments=TRUE)
-# INFILE <- args$args[1]
-# OUTDIR <- args$options$OUTDIR
-# noplot <- args$options$noplot
-# gzip <- args$options$gzip
-# if(is.null(OUTDIR)){
-#   OUTDIR <- ""
-# }
-#
-# #Create OUTDIR if it doesn't already exist
-# if(!dir.exists(OUTDIR)){
-#   dir.create(OUTDIR)
-# }
-#
-# #Checks for appropriate positional arguments
+require(optparse)
+#List of command-line options
+option_list <- list(
+  make_option(c("-D", "--dimensions"),type="integer",default=8,
+              help="number of principal components to use in sample batching [default: %default]",
+              metavar="integer"),
+  make_option(c("--batchSize"),type="integer",default=100,
+              help="target number of samples per batch [default: %default]",
+              metavar="integer"),
+  make_option(c("--minBatch"),type="integer",default=60,
+              help="minimum number of samples per batch [default: %default]",
+              metavar="integer"),
+  make_option(c("--maxBatch"),type="integer",default=150,
+              help="maximum number of samples per batch [default: %default]",
+              metavar="integer"),
+  make_option(c("-O", "--OUTDIR"),type="character",default=NULL,
+              help="output directory [default: pwd]",
+              metavar="character"),
+  make_option(c("-p", "--noplot"),action="store_true",default=FALSE,
+              help="disable all visualization [default: %default]"),
+  make_option(c("-z", "--gzip"),action="store_false",default=TRUE,
+              help="gzip output files [default: %default]")
+)
+
+#Get command-line arguments & options
+args <- parse_args(OptionParser(usage="%prog [options] median_coverage_matrix",
+                                option_list=option_list),
+                   positional_arguments=TRUE)
+
+#Sanity-check arguments
 # if(length(args$args) != 1){
 #   stop("Must supply an input median coverage matrix\n")
 # }
-#
-# #Loads data
-# dat <- readMatrix(INFILE)
-#
-# #Transforms data to predicted copy numbers
-# dat.norm <- normalizeContigsPerMatrix(dat,exclude=24:25,scale.exclude=24:25,
-#                                       genome.ploidy=2,contig.ploidy=rep(2,24))
-#
+
+#Clean arguments & options
+INFILE <- args$args[1]
+nPCs <- args$options$dimensions
+batch.min <- args$options$minBatch
+batch.max <- args$options$batchMax
+batch.ideal <- args$options$batchSize
+OUTDIR <- args$options$OUTDIR
+plot <- !(args$options$noplot)
+gzip <- args$options$gzip
+if(is.null(OUTDIR)){
+  OUTDIR <- "./"
+}
+
+##DEV TEST RUN (on local machine)
+INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
+plot <- T
+nPCs <- 8
+batch.min <- 60
+batch.max <- 150
+batch.ideal <- 100
+OUTDIR <- "~/scratch/WGDmodel_testing/"
+plot <- T
+gzip <- T
+
+#Create OUTDIR if it doesn't already exist
+if(!dir.exists(OUTDIR)){
+  dir.create(OUTDIR)
+}
+
+#Checks for appropriate number of PCs
+if(nPCs>20){
+  warning(">20 PCs not allowed for clustering; rounding down to 20.")
+  nPCs <- 20
+}
+
+#####PART 1: DATA PROCESSING
+#Read & normalize coverage data
+dat <- readMatrix(INFILE)
+dat <- normalizeContigsPerSample(dat,exclude=c("X","Y"),ploidy=2)
+chr.dat <- medianPerContigPerSample(dat)
+
+#####PART 2: DOSAGE-BASED BATCHING
+#Perform PCA on full matrix
+PCs <- binCovPCA(dat,exclude=c("X","Y"))
+
+#Cluster samples based on dosage PCA
+#Note: tries this with seeds 1-100 (iterated sequentially) until first success
+#From what I can tell, this is necessary due to centroid initialization of k-means
+#This can probably be patched at a later date
+clust.PCs <- NULL
+seed <- 0
+while(is.null(clust.PCs) && seed<=100){
+  seed <- seed+1
+  set.seed(seed)
+  try(
+    if(plot==T){
+      pdf(paste(OUTDIR,"/dosageClustering.scatter.pdf",sep=""),height=8,width=8*(7/6))
+      clust.PCs <- clusterDosageProfiles(PCs$top[,1:(nPCs+1)])
+      dev.off()
+    }else{
+      clust.PCs <- clusterDosageProfiles(PCs$top[,1:(nPCs+1)],plot=F)
+    }
+  ,silent=T)
+}
+
+#Write out list of cluster assignments per sample
+
+#Write out list of PCs per sample
+
+#Write out list of PC coordinates per cluster center
+
+
 # #Set sex assignment table
 # sexAssign.df <- data.frame("CN.X"=c(1,2,1,3,2,1),
 #                            "CN.Y"=c(1,0,0,0,1,2),
@@ -707,3 +1133,15 @@ medianPerContigPerSample <- function(dat){
 # if(gzip==T){
 #   system(paste("gzip -f ",OUTDIR,"/estimated_copy_numbers.txt",sep=""),intern=F,wait=F)
 # }
+
+
+
+
+
+
+
+
+
+
+
+
