@@ -6,6 +6,6 @@
 /Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/analysis_scripts/gnomAD_WGD_model_development.R="9F5A06F5"
 /Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/bin/plot_raw_SV_QC.R="98FDC063"
 /Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/plot/plot_minimal_metadata.R="4A30D4F3"
-/Users/rlc/Desktop/Collins/Talkowski/code/WGD/bin/checkCopyNumbers.R="6DA0041D"
 /Users/rlc/Desktop/Collins/Talkowski/code/WGD/bin/correctGC.R="39BC8392"
+/Users/rlc/Desktop/Collins/Talkowski/code/WGD/bin/medianCoverage.R="EF0778C0"
 /Users/rlc/Desktop/Collins/Talkowski/code/WGD/bin/runWGDModel.R="EF64047F"
