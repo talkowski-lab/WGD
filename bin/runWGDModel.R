@@ -793,6 +793,7 @@ assignSex <- function(dat,sexChr=24:25,
 ###############################################################
 boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
                               contigLabels=paste("chr",c(1:22,"X","Y"),sep=""),
+                              xmain="Chromosome",ymax=NULL,
                               colorSignif=T,connect=F,boxes=T){
   #Load library
   require(beeswarm)
@@ -826,7 +827,9 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
   }
 
   #Get max y-value
-  ymax <- max(4,max(dat[,-1],na.rm=T))
+  if(is.null(ymax)){
+    ymax <- max(4,max(dat[,-1],na.rm=T))
+  }
 
   #Prepare plot area
   par(mar=c(3.5,3.5,0.5,0.5))
@@ -904,7 +907,7 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
 
   #Add x-axis labels
   axis(1,at=(1:length(contigLabels))-0.5,tick=F,line=-0.8,las=2,labels=contigLabels)
-  mtext(1,text="Chromosome",line=2.2)
+  mtext(1,text=xmain,line=2.2)
 
   #Add y-axis labels
   axis(2,at=0:ymax,las=2)
@@ -1133,7 +1136,7 @@ if(gzip==T){
   system(paste("gzip -f ",OUTDIR,"/sample_sex_assignments.txt",sep=""),intern=F,wait=F)
 }
 
-#Generate p-values, q-values, and rounded CNs for males/females
+#Generate p-values, q-values, and rounded CNs for males/females for whole chromosomes
 males.p <- testCNs(chr.dat.males,FDR=F)
 males.q <- testCNs(chr.dat.males,FDR=T)
 males.CN <- chr.dat.males
@@ -1174,4 +1177,87 @@ write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
 if(gzip==T){
   system(paste("gzip -f ",OUTDIR,"/estimated_copy_numbers.txt",sep=""),intern=F,wait=F)
 }
+
+#Plot binwise CN estimates per autosome -- all samples
+binwise.dat <- data.frame(colnames(dat)[-c(1:3)],
+                          t(dat[,-c(1:3)]))
+bin.IDs <- as.character(apply(dat[1:3],1,paste,collapse="_",sep=""))
+bin.IDs <- as.character(sapply(bin.IDs,function(ID){gsub(" ","",ID,fixed=T)}))
+colnames(binwise.dat) <- c("ID",bin.IDs)
+sapply(setdiff(unique(dat[,1]),c("X","Y")),function(contig){
+  png(paste(OUTDIR,"/estimated_CN_per_bin.all_samples.chr",contig,".png",sep=""),
+      height=1250,width=2500,res=300)
+  plot.dat <- binwise.dat[,c(1,which(dat[,1]==contig)+1)]
+  boxplotsPerContig(plot.dat,exclude=NA,contig.ploidy=rep(2,ncol(plot.dat)-1),connect=T,
+                    xmain=paste("chr",contig," Position (Binned)",sep=""),ymax=5,contigLabels=NA)
+  dev.off()
+})
+
+#Plot binwise CN estimates per sex chromosome -- all samples
+binwise.dat.males <- data.frame(chr.dat.males$ID,
+                                t(dat[,which(colnames(dat) %in% chr.dat.males$ID)]))
+colnames(binwise.dat.males) <- c("ID",bin.IDs)
+binwise.dat.females <- data.frame(chr.dat.females$ID,
+                                t(dat[,which(colnames(dat) %in% chr.dat.females$ID)]))
+colnames(binwise.dat.females) <- c("ID",bin.IDs)
+sapply(intersect(unique(dat[,1]),c("X","Y")),function(contig){
+  #Males
+  png(paste(OUTDIR,"/estimated_CN_per_bin.chrX_lessThan_2copies.chr",contig,".png",sep=""),
+      height=1250,width=2500,res=300)
+  plot.dat <- binwise.dat.males[,c(1,which(dat[,1]==contig)+1)]
+  boxplotsPerContig(plot.dat,exclude=NA,contig.ploidy=rep(2,ncol(plot.dat)-1),connect=T,
+                    xmain=paste("chr",contig," Position (Binned)",sep=""),ymax=5,contigLabels=NA)
+  dev.off()
+  #Females
+  png(paste(OUTDIR,"/estimated_CN_per_bin.chrX_atLeast_2copies.chr",contig,".png",sep=""),
+      height=1250,width=2500,res=300)
+  plot.dat <- binwise.dat.females[,c(1,which(dat[,1]==contig)+1)]
+  boxplotsPerContig(plot.dat,exclude=NA,contig.ploidy=rep(2,ncol(plot.dat)-1),connect=T,
+                    xmain=paste("chr",contig," Position (Binned)",sep=""),ymax=5,contigLabels=NA)
+  dev.off()
+})
+
+#Generate p-values, q-values, and rounded CNs for males/females for per-bin
+males.p <- testCNs(chr.dat.males,FDR=F)
+males.q <- testCNs(chr.dat.males,FDR=T)
+males.CN <- chr.dat.males
+males.CN[,-1] <- apply(males.CN[,-1],2,round,digits=2)
+females.p <- testCNs(chr.dat.females,FDR=F)
+females.q <- testCNs(chr.dat.females,FDR=T)
+females.CN <- chr.dat.females
+females.CN[,-1] <- apply(females.CN[,-1],2,round,digits=2)
+
+#Merge male/female p-values and rounded CNs
+merged.p <- rbind(males.p,females.p)
+merged.p <- merged.p[match(colnames(dat)[-c(1:3)],merged.p$ID),]
+colnames(merged.p) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_pValue",sep=""))
+merged.q <- rbind(males.q,females.q)
+merged.q <- merged.q[match(colnames(dat)[-c(1:3)],merged.q$ID),]
+colnames(merged.q) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_qValue",sep=""))
+merged.CN <- rbind(males.CN,females.CN)
+merged.CN <- merged.CN[match(colnames(dat)[-c(1:3)],merged.CN$ID),]
+colnames(merged.CN) <- c("#ID",paste("chr",c(1:22,"X","Y"),"_CopyNumber",sep=""))
+
+#Write merged p-values
+write.table(merged.p,paste(OUTDIR,"/CNA_pValues.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/CNA_pValues.txt",sep=""),intern=F,wait=F)
+}
+
+#Write merged q-values
+write.table(merged.q,paste(OUTDIR,"/CNA_qValues.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/CNA_qValues.txt",sep=""),intern=F,wait=F)
+}
+
+#Write merged copy number estimates
+write.table(merged.CN,paste(OUTDIR,"/estimated_copy_numbers.txt",sep=""),
+            col.names=T,row.names=F,sep="\t",quote=F)
+if(gzip==T){
+  system(paste("gzip -f ",OUTDIR,"/estimated_copy_numbers.txt",sep=""),intern=F,wait=F)
+}
+
+
 
