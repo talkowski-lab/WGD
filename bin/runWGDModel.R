@@ -984,14 +984,14 @@ if(is.null(OUTDIR)){
 }
 
 # ##DEV TEST RUN (on local machine)
-# INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
+# # INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
+# INFILE <- "~/scratch/6F_WGD_testing.all_samples.6Fadjusted_binCov.1Mb_matrix.bed.gz"
 # plot <- T
 # nPCs <- 8
 # batch.min <- 60
 # batch.max <- 150
 # batch.ideal <- 100
 # OUTDIR <- "~/scratch/WGDmodel_testing/"
-# plot <- T
 # gzip <- T
 
 #Create OUTDIR if it doesn't already exist
