@@ -188,8 +188,8 @@ wrmean <- function(vals,weights=c(0.1,0.2,1,0.2,0.1)){
 require(optparse)
 #List of command-line options
 option_list <- list(
-  make_option(c("-z", "--gzip"),action="store_false",default=TRUE,
-              help="gzip output files [default: TRUE]")
+  make_option(c("-z", "--gzip"),action="store_true",default=FALSE,
+              help="gzip output files [default: %default]")
 )
 
 #Get command-line arguments & options
