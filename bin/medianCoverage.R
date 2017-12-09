@@ -48,13 +48,13 @@ covPerSample <- function(cov,downsample=1000000,mad=F){
     cov <- cov[sample(1:nrow(cov), downsample),]
   }
   # Get medians with and without zero-cov bins
-  zerobins <- which(as.integer(apply(as.data.frame(cov[,-c(1:3)]), 1, median)) == 0)
-  withzeros <- as.numeric(apply(as.data.frame(cov[,-c(1:3)]), 2, median))
-  withoutzeros <- as.numeric(apply(as.data.frame(cov[-zerobins,-c(1:3)]), 2, median))
+  zerobins <- which(as.integer(apply(as.data.frame(cov[,-c(1:3)]), 1, median, na.rm=T)) == 0)
+  withzeros <- as.numeric(apply(as.data.frame(cov[,-c(1:3)]), 2, median, na.rm=T))
+  withoutzeros <- as.numeric(apply(as.data.frame(cov[-zerobins,-c(1:3)]), 2, median, na.rm=T))
   #Get SDs with and without zero-cov bins (if optioned)
   if(mad==T){
-    withzeros.mad <- as.numeric(apply(as.data.frame(cov[,-c(1:3)]), 2, mad))
-    withoutzeros.mad <- as.numeric(apply(as.data.frame(cov[-zerobins,-c(1:3)]), 2, mad))
+    withzeros.mad <- as.numeric(apply(as.data.frame(cov[,-c(1:3)]), 2, mad, na.rm=T))
+    withoutzeros.mad <- as.numeric(apply(as.data.frame(cov[-zerobins,-c(1:3)]), 2, mad, na.rm=T))
   }
   # Compile results df to return
   if(mad==T){
@@ -84,9 +84,9 @@ covPerBin <- function(cov,downsample=500,mad=F){
   }
   # Get medians with and without zero-cov samples
   meds <- t(apply(as.data.frame(cov[,-c(1:3)]), 1, function(vals){
-    withzeros <- median(vals)
+    withzeros <- median(vals, na.rm=T)
     if(any(vals>0)){
-      withoutzeros <- median(vals[which(vals>0)])
+      withoutzeros <- median(vals[which(vals>0)], na.rm=T)
     }else{
       withoutzeros <- NA
     }
@@ -94,9 +94,9 @@ covPerBin <- function(cov,downsample=500,mad=F){
   }))
   # Get standard deviations (if optioned)
   sds <- t(apply(as.data.frame(cov[,-c(1:3)]), 1, function(vals){
-    withzeros <- mad(vals)
+    withzeros <- mad(vals, na.rm=T)
     if(any(vals>0)){
-      withoutzeros <- mad(vals[which(vals>0)])
+      withoutzeros <- mad(vals[which(vals>0)], na.rm=T)
     }else{
       withoutzeros <- NA
     }
