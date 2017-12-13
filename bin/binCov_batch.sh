@@ -9,7 +9,7 @@
 usage(){
 cat <<EOF
 
-usage: binCov_batch.sh [-h] [-b BINSIZE] [-m MODE] [-n] [-z]
+usage: binCov_batch.sh [-h] [-b BINSIZE] [-m MODE] [-n] [-z] [-C]
                        [-L CONTIGS] [-x BLACKLIST] [-v OVERLAP] 
                        BAM ID OUTDIR
 
@@ -26,6 +26,7 @@ Optional arguments:
   -m  MODE         Evaluate physical or nucleotide coverage (default: nucleotide)
   -n  NORMALIZED   Also generate normalized coverage values 
   -z  GZIP         Attempt to tar & gzip the output directory
+  -C  CRAM         Input file is in CRAM format
   -L  CONTIGS      List of contigs to evaluate (default: all contigs in bam header)
   -x  BLACKLIST    BED file of regions to ignore
   -v  OVERLAP      Maximum tolerated blacklist overlap before excluding bin
@@ -41,7 +42,8 @@ blist=NONE
 v=0.05
 norm=0
 tgz=0
-while getopts ":b:m:nzL:x:v:h" opt; do
+CRAM=0
+while getopts ":b:m:nzCL:x:v:h" opt; do
 	case "$opt" in
 		b)
 			binsize=${OPTARG}
@@ -54,6 +56,9 @@ while getopts ":b:m:nzL:x:v:h" opt; do
       ;;
     z)
       tgz=1
+      ;;
+    C)
+      CRAM=1
       ;;
 		L)
 			contigs=${OPTARG}
@@ -107,6 +112,9 @@ while read contig; do
   fi
   if ! [ ${blist} == "NONE" ]; then
     binCovOptions=$( echo -e "-x ${blist} ${binCovOptions}" )
+  fi
+  if [ ${CRAM} == 1 ]; then
+    binCovOptions=$( echo -e "-C ${binCovOptions}" )
   fi
   #Run binCov
   ${spath}/binCov.py ${binCovOptions}
