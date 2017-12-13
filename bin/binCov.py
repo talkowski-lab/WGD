@@ -141,7 +141,7 @@ def main():
                         help='Input file is in sam format')
     parser.add_argument('-C', '--CRAM', default=False, action='store_true', 
                         help='Input file is in cram format')
-    parser.add_argument('-z', dest='gzip', default=False,
+    parser.add_argument('-z', '--gzip', dest='gzip', default=False,
                         action='store_true', help='Gzip output files'
                         ' bed files')
     parser.add_argument('-n', '--norm_out', type=str,
