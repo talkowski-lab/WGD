@@ -137,33 +137,33 @@ def main():
                         help='Input bam (or sam/cram, but requires appropriate flag)')
     parser.add_argument('chr', help='Contig to evaluate')
     parser.add_argument('cov_out', help='Output bed file of raw coverage')
-    parser.add_argument('-n', '--norm_out', type=str,
-                        help='Output bed file of normalized coverage')
     parser.add_argument('-S', '--SAM', default=False, action='store_true', 
                         help='Input file is in sam format')
     parser.add_argument('-C', '--CRAM', default=False, action='store_true', 
                         help='Input file is in cram format')
+    parser.add_argument('-z', dest='gzip', default=False,
+                        action='store_true', help='Gzip output files'
+                        ' bed files')
+    parser.add_argument('-n', '--norm_out', type=str,
+                        help='Output normalized coverage')
     parser.add_argument('-b', '--binsize', type=int, default=1000,
-                        help='Bin size in bp (default: 1000)')
+                        help='Bin size, in bp (default: 1000)')
     parser.add_argument('-m', '--mode', default='nucleotide',
                         choices = ['nucleotide', 'physical'],
                         help='Evaluate nucleotide or physical coverage '
                              '(default: nucleotide)')
     parser.add_argument('-x', '--blacklist', type=str, default=None,
                         help='BED file of regions to ignore')
-    parser.add_argument('-z', dest='gzip', default=False,
-                        action='store_true', help='Boolean flag to gzip output'
-                        ' bed files')
-    parser.add_argument('-p', '--presubsetted', dest='presubbed',
-                        action='store_true', help='Boolean flag to indicate'
-                        ' if input bam is already subsetted to desired chr',
-                        default=False)
+    # parser.add_argument('-p', '--presubsetted', dest='presubbed',
+    #                     action='store_true', help='Boolean flag to indicate'
+    #                     ' if input bam is already subsetted to desired chr',
+    #                     default=False)
     parser.add_argument('-v', '--overlap', nargs=1, type=float, default=0.05,
                            help='Maximum tolerated blacklist overlap before '
                                  'excluding bin')
     parser.add_argument('--oldBT', dest='oldBT', default=False,
-                        action='store_true', help='Boolean flag to indicate'
-                        ' if you are using a bedtools version pre-2.24.0')
+                        action='store_true', help='Flag to indicate if you are'
+                        ' using a BEDTools version pre-2.24.0')
     parser.set_defaults(presubbed=False)
     args = parser.parse_args()
 
