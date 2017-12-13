@@ -134,11 +134,15 @@ def main():
     #Add arguments
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('bam', type=str,
-                        help='Input bam')
+                        help='Input bam (or sam/cram, but requires appropriate flag)')
     parser.add_argument('chr', help='Contig to evaluate')
     parser.add_argument('cov_out', help='Output bed file of raw coverage')
     parser.add_argument('-n', '--norm_out', type=str,
                         help='Output bed file of normalized coverage')
+    parser.add_argument('-S', '--SAM', default=False, action='store_true', 
+                        help='Input file is in sam format')
+    parser.add_argument('-C', '--CRAM', default=False, action='store_true', 
+                        help='Input file is in cram format')
     parser.add_argument('-b', '--binsize', type=int, default=1000,
                         help='Bin size in bp (default: 1000)')
     parser.add_argument('-m', '--mode', default='nucleotide',
@@ -170,7 +174,12 @@ def main():
         filename = args.bam
 
     #Stores bam input as pysam.AlignmentFile
-    bamfile = pysam.AlignmentFile(filename, 'rb')
+    if args.SAM:
+        bamfile = pysam.AlignmentFile(filename, 'r')
+    elif args.CRAM:
+        bamfile = pysam.AlignmentFile(filename, 'rc')
+    else:
+        bamfile = pysam.AlignmentFile(filename, 'rb')
 
     #Get coverage & write out
     coverage = binCov(bamfile, args.chr, args.binsize,
@@ -180,7 +189,7 @@ def main():
     call('sort -Vk1,1 -k2,2n -o ' + args.cov_out + ' ' + args.cov_out,
          shell=True)
     #Gzip if optioned
-    if args.gzip is True:
+    if args.gzip:
         with open(args.cov_out, 'rb') as f_in, gzip.open(args.cov_out + '.gz', 
             'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
@@ -195,7 +204,7 @@ def main():
         call(' '.join(['sort -Vk1,1 -k2,2n -o', args.norm_out, 
                         args.norm_out]), shell=True)
         #Gzip if optioned
-        if args.gzip is True:
+        if args.gzip:
             with open(args.norm_out, 'rb') as f_in, gzip.open(args.norm_out 
                 + '.gz', 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
