@@ -141,6 +141,8 @@ def main():
                         help='Input file is in sam format')
     parser.add_argument('-C', '--CRAM', default=False, action='store_true', 
                         help='Input file is in cram format')
+    parser.add_argument('-i', '--index_path', type=str, default=None, 
+                        help='Bam/cram index file')
     parser.add_argument('-z', '--gzip', dest='gzip', default=False,
                         action='store_true', help='Gzip output files'
                         ' bed files')
@@ -173,13 +175,16 @@ def main():
     else:
         filename = args.bam
 
-    #Stores bam input as pysam.AlignmentFile
+    #Set appropriate read mode for bam/sam/cram input
     if args.SAM:
-        bamfile = pysam.AlignmentFile(filename, 'r')
+        read_mode = 'r'
     elif args.CRAM:
-        bamfile = pysam.AlignmentFile(filename, 'rc')
+        read_mode = 'rc'
     else:
-        bamfile = pysam.AlignmentFile(filename, 'rb')
+        read_mode = 'rb'
+
+    #Read bamfile as pysam.AlignmentFile
+    bamfile = pysam.AlignmentFile(filename, read_mode, index_filename=args.index_path)
 
     #Get coverage & write out
     coverage = binCov(bamfile, args.chr, args.binsize,

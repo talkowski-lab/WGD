@@ -9,7 +9,7 @@
 usage(){
 cat <<EOF
 
-usage: binCov_batch.sh [-h] [-b BINSIZE] [-m MODE] [-n] [-z] [-C]
+usage: binCov_batch.sh [-h] [-b BINSIZE] [-m MODE] [-n] [-z] [-C] [-i INDEX]
                        [-L CONTIGS] [-x BLACKLIST] [-v OVERLAP] 
                        BAM ID OUTDIR
 
@@ -24,9 +24,10 @@ Optional arguments:
   -h  HELP         Show this help message and exit
   -b  BINSIZE      Bin size in bp (default: 1000)
   -m  MODE         Evaluate physical or nucleotide coverage (default: nucleotide)
-  -n  NORMALIZED   Also generate normalized coverage values 
+  -n  NORMALIZED   Also generate normalized coverage values
   -z  GZIP         Attempt to tar & gzip the output directory
   -C  CRAM         Input file is in CRAM format
+  -i  INDEX        Path to BAM/CRAM index
   -L  CONTIGS      List of contigs to evaluate (default: all contigs in bam header)
   -x  BLACKLIST    BED file of regions to ignore
   -v  OVERLAP      Maximum tolerated blacklist overlap before excluding bin
@@ -43,14 +44,15 @@ v=0.05
 norm=0
 tgz=0
 CRAM=0
-while getopts ":b:m:nzCL:x:v:h" opt; do
-	case "$opt" in
-		b)
-			binsize=${OPTARG}
-			;;
-		m)
-			mode=${OPTARG}
-			;;
+index=0
+while getopts ":b:m:nzCi:L:x:v:h" opt; do
+  case "$opt" in
+    b)
+      binsize=${OPTARG}
+      ;;
+    m)
+      mode=${OPTARG}
+      ;;
     n)
       norm=1
       ;;
@@ -60,20 +62,23 @@ while getopts ":b:m:nzCL:x:v:h" opt; do
     C)
       CRAM=1
       ;;
-		L)
-			contigs=${OPTARG}
-			;;
-		x)
-			blist=${OPTARG}
-			;;
-		v)
-			v=${OPTARG}
-			;;
-		h)
-			usage
-			exit 0
-			;;
-	esac
+    i)
+      index=${OPTARG}
+      ;;
+    L)
+      contigs=${OPTARG}
+      ;;
+    x)
+      blist=${OPTARG}
+      ;;
+    v)
+      v=${OPTARG}
+      ;;
+    h)
+      usage
+      exit 0
+      ;;
+  esac
 done
 shift $(( ${OPTIND} - 1))
 bam=$1
@@ -82,8 +87,8 @@ OUTDIR=$3
 
 #Check positional arguments
 if [ -z ${bam} ] || [ -z ${ID} ] || [ -z ${OUTDIR} ]; then
-	usage
-	exit 0
+  usage
+  exit 0
 fi
 
 #Create output directory if it doesn't exist
@@ -93,12 +98,12 @@ fi
 
 #Determine list of contigs to use (note: requires samtools)
 if [ ${contigs} == "DEFAULT" ]; then
-	contigs_list=mktemp
-	samtools view -H ${bam} | fgrep -w "@SQ" | \
+  contigs_list=mktemp
+  samtools view -H ${bam} | fgrep -w "@SQ" | \
   awk '{ print $2 }' | cut -d\: -f2 > \
   ${contigs_list}
 else
-	contigs_list=${contigs}
+  contigs_list=${contigs}
 fi
 
 #Run binCov.py on all contigs
@@ -115,6 +120,9 @@ while read contig; do
   fi
   if [ ${CRAM} == 1 ]; then
     binCovOptions=$( echo -e "-C ${binCovOptions}" )
+  fi
+  if [ ${index} != 0 ]; then
+    binCovOptions=$( echo -e "-i ${index}" )
   fi
   #Run binCov
   ${spath}/binCov.py ${binCovOptions}
