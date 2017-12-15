@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2016 Ryan Collins <rcollins@chgr.mgh.harvard.edu>
+# Copyright (c) 2017 Ryan Collins <rcollins@chgr.mgh.harvard.edu>
 # Distributed under terms of the MIT license.
 
 """
@@ -141,7 +141,7 @@ def main():
                         help='Input file is in sam format')
     parser.add_argument('-C', '--CRAM', default=False, action='store_true', 
                         help='Input file is in cram format')
-    parser.add_argument('-i', '--index_path', type=str, default=None, 
+    parser.add_argument('-I', '--index_path', type=str, default=None, 
                         help='Bam/cram index file')
     parser.add_argument('-z', '--gzip', dest='gzip', default=False,
                         action='store_true', help='Gzip output files'

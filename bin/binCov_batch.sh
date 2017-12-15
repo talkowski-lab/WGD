@@ -9,7 +9,7 @@
 usage(){
 cat <<EOF
 
-usage: binCov_batch.sh [-h] [-b BINSIZE] [-m MODE] [-n] [-z] [-C] [-i INDEX]
+usage: binCov_batch.sh [-h] [-b BINSIZE] [-m MODE] [-n] [-z] [-C] [-I INDEX]
                        [-L CONTIGS] [-x BLACKLIST] [-v OVERLAP] 
                        BAM ID OUTDIR
 
@@ -44,8 +44,8 @@ v=0.05
 norm=0
 tgz=0
 CRAM=0
-index=0
-while getopts ":b:m:nzCi:L:x:v:h" opt; do
+index_path=0
+while getopts ":b:m:nzCI:L:x:v:h" opt; do
   case "$opt" in
     b)
       binsize=${OPTARG}
@@ -62,8 +62,8 @@ while getopts ":b:m:nzCi:L:x:v:h" opt; do
     C)
       CRAM=1
       ;;
-    i)
-      index=${OPTARG}
+    I)
+      index_path=${OPTARG}
       ;;
     L)
       contigs=${OPTARG}
@@ -121,8 +121,8 @@ while read contig; do
   if [ ${CRAM} == 1 ]; then
     binCovOptions=$( echo -e "-C ${binCovOptions}" )
   fi
-  if [ ${index} != 0 ]; then
-    binCovOptions=$( echo -e "-i ${index}" )
+  if [ ${index_path} != 0 ]; then
+    binCovOptions=$( echo -e "--index_path=${index_path}" )
   fi
   #Run binCov
   ${spath}/binCov.py ${binCovOptions}
