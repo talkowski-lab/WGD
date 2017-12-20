@@ -122,7 +122,7 @@ while read contig; do
     binCovOptions=$( echo -e "-C ${binCovOptions}" )
   fi
   if [ ${index_path} != 0 ]; then
-    binCovOptions=$( echo -e "-I ${index_path}" )
+    binCovOptions=$( echo -e "-I ${index_path} ${binCovOptions}" )
   fi
   #Print debugging messages
   echo "${spath}/binCov.py ${binCovOptions}"
