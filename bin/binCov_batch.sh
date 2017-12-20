@@ -125,7 +125,7 @@ while read contig; do
     binCovOptions=$( echo -e "-I ${index_path} ${binCovOptions}" )
   fi
   #Print debugging messages
-  echo "\n\n\n\n${spath}/binCov.py ${binCovOptions}"
+  echo -e "\n\n\n\n${spath}/binCov.py ${binCovOptions}"
   echo -e "\n${bam}\n${contig}\n${OUTDIR}/${ID}.${contig}.${binsize}bpBins.${mode}.rawCov.bed\n"
   #Run binCov
   ${spath}/binCov.py ${binCovOptions}
