@@ -110,37 +110,40 @@ Physical coverage is marginally faster than nucleotide coverage. Bin sizes ≥10
 ### binCov.py
 Iterates through a single chromosome of a bam file and calculates either nucleotide or physical coverage in regularly segmented bins.
 ```
-usage: binCov.py [-h] [-n NORM_OUT] [-b BINSIZE] [-m {nucleotide,physical}]
-                 [-x BLACKLIST] [-p] [-v OVERLAP] [--oldBT]
+usage: binCov.py [-h] [-S] [-C] [-I INDEX_PATH] [-z] [-n NORM_OUT]
+                 [-b BINSIZE] [-m {nucleotide,physical}] [-x BLACKLIST]
+                 [-v OVERLAP] [--oldBT]
                  bam chr cov_out
 
 Calculates non-duplicate primary-aligned binned coverage of a chromosome from
 an input BAM file
 
 positional arguments:
-  bam                   Input bam
+  bam                   Input bam (or sam/cram, but requires appropriate flag)
   chr                   Contig to evaluate
   cov_out               Output bed file of raw coverage
 
 optional arguments:
   -h, --help            show this help message and exit
+  -S, --SAM             Input file is in sam format
+  -C, --CRAM            Input file is in cram format
+  -I INDEX_PATH, --index_path INDEX_PATH
+                        Bam/cram index file
+  -z, --gzip            Gzip output files bed files
   -n NORM_OUT, --norm_out NORM_OUT
-                        Output bed file of normalized coverage
+                        Output normalized coverage
   -b BINSIZE, --binsize BINSIZE
-                        Bin size in bp (default: 1000)
+                        Bin size, in bp (default: 1000)
   -m {nucleotide,physical}, --mode {nucleotide,physical}
                         Evaluate nucleotide or physical coverage (default:
                         nucleotide)
   -x BLACKLIST, --blacklist BLACKLIST
                         BED file of regions to ignore
-  -z                    Boolean flag to gzip output bed files
-  -p, --presubsetted    Boolean flag to indicate if input bam is already
-                        subsetted to desired chr
   -v OVERLAP, --overlap OVERLAP
                         Maximum tolerated blacklist overlap before excluding
                         bin
-  --oldBT               Boolean flag to indicate if you are using a bedtools
-                        version pre-2.24.0
+  --oldBT               Flag to indicate if you are using a BEDTools version
+                        pre-2.24.0
 ```  
 **Usage Notes:**  
 - Input bam file must be coordinate-sorted and indexed.  
