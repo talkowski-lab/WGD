@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2016 Ryan Collins <rcollins@chgr.mgh.harvard.edu>
+# Copyright (c) 2017 Ryan Collins <rlcollins@g.harvard.edu>
 # Distributed under terms of the MIT license.
 
 # Wrapper for bedtools unionbedg to create a multi-sample coverage
@@ -77,10 +77,10 @@ fi
   sed -e 's/chrom/Chr/g' -e 's/start/Start/g' -e 's/end/End/g' | \
   sort -Vk1,1 -k2,2n -k3,3n | uniq > ${OUTFILE}
 
-#Restrict OUTFILE to RESTRICT bins
+#Restrict OUTFILE to RESTRICT bins (if optioned)
 if [ ${RESTRICT} != "0" ]; then
   head -n1 ${OUTFILE} > ${OUTFILE}2
-  awk '{ print $1"_"$2"_"$3 }' ${RESTRICT} | fgrep -wf - \
+  fgrep -v "#" ${RESTRICT} | awk '{ print $1"_"$2"_"$3 }' | fgrep -wf - \
   <( paste <( sed '1d' ${OUTFILE} | awk '{ print $1"_"$2"_"$3 }' ) \
            <( sed '1d' ${OUTFILE} ) ) | cut -f2- >> ${OUTFILE}2
   mv ${OUTFILE}2 ${OUTFILE}
