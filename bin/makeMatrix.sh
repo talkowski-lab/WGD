@@ -74,8 +74,7 @@ fi
   -header \
   -names $( while read ID cov; do echo "${ID}"; done < ${SAMPLES} | paste -s -d\  ) \
   -i $( while read ID cov; do echo "${cov}"; done < ${SAMPLES} | paste -s -d\  ) | \
-  sed -e 's/chrom/Chr/g' -e 's/start/Start/g' -e 's/end/End/g' | \
-  sort -Vk1,1 -k2,2n -k3,3n | uniq > ${OUTFILE}
+  sed -e 's/chrom/Chr/g' -e 's/start/Start/g' -e 's/end/End/g' > ${OUTFILE}
 
 #Restrict OUTFILE to RESTRICT bins (if optioned)
 if [ ${RESTRICT} != "0" ]; then

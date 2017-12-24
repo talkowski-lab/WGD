@@ -7,7 +7,7 @@
 # Performs the following:
 # 1) copy number estimation per contig per sample (with visualization options)
 # 2) sex assignment (with visualization options)
-# 3) dosage bias scoring (with visualization options)
+# 3) [optional] PCA & k-means based sample batching (with visualization options)
 
 #Input: a binCov matrix of any resolution (very coarse resolution recommended, e.g. 1Mb)
 
@@ -939,60 +939,63 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
 require(optparse)
 #List of command-line options
 option_list <- list(
-  make_option(c("-D", "--dimensions"),type="integer",default=8,
-              help="number of principal components to use in sample batching [default: %default]",
-              metavar="integer"),
-  make_option(c("--batchSize"),type="integer",default=100,
-              help="target number of samples per batch [default: %default]",
-              metavar="integer"),
-  make_option(c("--minBatch"),type="integer",default=60,
-              help="minimum number of samples per batch [default: %default]",
-              metavar="integer"),
-  make_option(c("--maxBatch"),type="integer",default=150,
-              help="maximum number of samples per batch [default: %default]",
-              metavar="integer"),
   make_option(c("-O", "--OUTDIR"),type="character",default=NULL,
               help="output directory [default: pwd]",
               metavar="character"),
   make_option(c("--noplot"),action="store_true",default=FALSE,
               help="disable all visualization [default: %default]"),
   make_option(c("-z", "--gzip"),action="store_true",default=FALSE,
-              help="gzip output files [default: %default]")
+              help="gzip output files [default: %default]"),
+  make_option(c("-k", "--kmeans"),action="store_true",default=FALSE,
+              help="perform PCA & k-means based sample batching [default: %default]"),
+  make_option(c("-D", "--dimensions"),type="integer",default=8,
+              help="number of principal components to use in sample batching (requires -k) [default: %default]",
+              metavar="integer"),
+  make_option(c("--batchSize"),type="integer",default=100,
+              help="target number of samples per batch (requires -k) [default: %default]",
+              metavar="integer"),
+  make_option(c("--minBatch"),type="integer",default=60,
+              help="minimum number of samples per batch (requires -k) [default: %default]",
+              metavar="integer"),
+  make_option(c("--maxBatch"),type="integer",default=150,
+              help="maximum number of samples per batch (requires -k) [default: %default]",
+              metavar="integer")
 )
 
 #Get command-line arguments & options
-args <- parse_args(OptionParser(usage="%prog [options] median_coverage_matrix",
+args <- parse_args(OptionParser(usage="%prog [options] coverage_matrix",
                                 option_list=option_list),
                    positional_arguments=TRUE)
 
 #Sanity-check arguments
 if(length(args$args) != 1){
-  stop("Must supply an input median coverage matrix\n")
+  stop("Must supply an input coverage matrix\n")
 }
 
 #Clean arguments & options
 INFILE <- args$args[1]
+OUTDIR <- args$options$OUTDIR
+if(is.null(OUTDIR)){
+  OUTDIR <- "./"
+}
+plot <- !(args$options$noplot)
+gzip <- args$options$gzip
 nPCs <- args$options$dimensions
 batch.min <- args$options$minBatch
 batch.max <- args$options$batchMax
 batch.ideal <- args$options$batchSize
-OUTDIR <- args$options$OUTDIR
-plot <- !(args$options$noplot)
-gzip <- args$options$gzip
-if(is.null(OUTDIR)){
-  OUTDIR <- "./"
-}
 
 # ##DEV TEST RUN (on local machine)
-# # INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
-# INFILE <- "~/scratch/6F_WGD_testing.all_samples.6Fadjusted_binCov.1Mb_matrix.bed.gz"
+# INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
+# # INFILE <- "~/scratch/6F_WGD_testing.all_samples.6Fadjusted_binCov.1Mb_matrix.bed.gz"
 # plot <- T
+# OUTDIR <- "~/scratch/WGDmodel_testing/"
+# gzip <- T
+# kmeans <- F
 # nPCs <- 8
 # batch.min <- 60
 # batch.max <- 150
 # batch.ideal <- 100
-# OUTDIR <- "~/scratch/WGDmodel_testing/"
-# gzip <- T
 
 #Create OUTDIR if it doesn't already exist
 if(!dir.exists(OUTDIR)){
@@ -1008,59 +1011,62 @@ chr.dat <- medianPerContigPerSample(dat)
 # chr.dat.norm <- normalizeContigsPerMatrix(chr.dat,scale.exclude=c("X","Y"))
 
 #####PART 2: DOSAGE-BASED BATCHING#####
-#Perform PCA on full matrix
-PCs <- binCovPCA(dat,exclude=c("X","Y"),topPCs=nPCs)
+#Only run if kmeans is optioned
+if(kmeans==T){
+  #Perform PCA on full matrix
+  PCs <- binCovPCA(dat,exclude=c("X","Y"),topPCs=nPCs)
 
-#Cluster samples based on dosage PCA
-#Note: tries this with seeds 1-100 (iterated sequentially) until first success
-#From what I can tell, this is necessary due to centroid initialization of k-means
-#This can probably be patched at a later date
-clust.PCs <- NULL
-seed <- 0
-while(is.null(clust.PCs) && seed<=100){
-  seed <- seed+1
-  set.seed(seed)
-  try(
-    if(plot==T){
-      pdf(paste(OUTDIR,"/dosageClustering.scatter.pdf",sep=""),height=8,width=8*(7/6))
-      clust.PCs <- clusterDosageProfiles(PCs$top[,1:(nPCs+1)],plot=T)
-      dev.off()
-    }else{
-      clust.PCs <- clusterDosageProfiles(PCs$top[,1:(nPCs+1)],plot=F)
-    }
-    ,silent=T)
-  try(dev.off(),silent=T)
-}
+  #Cluster samples based on dosage PCA
+  #Note: tries this with seeds 1-100 (iterated sequentially) until first success
+  #From what I can tell, this is necessary due to centroid initialization of k-means
+  #This can probably be patched at a later date
+  clust.PCs <- NULL
+  seed <- 0
+  while(is.null(clust.PCs) && seed<=100){
+    seed <- seed+1
+    set.seed(seed)
+    try(
+      if(plot==T){
+        pdf(paste(OUTDIR,"/dosageClustering.scatter.pdf",sep=""),height=8,width=8*(7/6))
+        clust.PCs <- clusterDosageProfiles(PCs$top[,1:(nPCs+1)],plot=T)
+        dev.off()
+      }else{
+        clust.PCs <- clusterDosageProfiles(PCs$top[,1:(nPCs+1)],plot=F)
+      }
+      ,silent=T)
+    try(dev.off(),silent=T)
+  }
 
-#Write out list of cluster assignments per sample
-clusterAssignments.out <- data.frame("ID"=names(clust.PCs$batch),
-                                     "batch"=as.vector(as.integer(clust.PCs$batch)))
-colnames(clusterAssignments.out)[1] <- "#ID"
-write.table(clusterAssignments.out,
-            paste(OUTDIR,"/sample_batch_assignments.txt",sep=""),
-            col.names=T,row.names=F,sep="\t",quote=F)
-if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/sample_batch_assignments.txt",sep=""),intern=F,wait=F)
-}
+  #Write out list of cluster assignments per sample
+  clusterAssignments.out <- data.frame("ID"=names(clust.PCs$batch),
+                                       "batch"=as.vector(as.integer(clust.PCs$batch)))
+  colnames(clusterAssignments.out)[1] <- "#ID"
+  write.table(clusterAssignments.out,
+              paste(OUTDIR,"/sample_batch_assignments.txt",sep=""),
+              col.names=T,row.names=F,sep="\t",quote=F)
+  if(gzip==T){
+    system(paste("gzip -f ",OUTDIR,"/sample_batch_assignments.txt",sep=""),intern=F,wait=F)
+  }
 
-#Write out list of PCs per sample
-samplePCs.out <- PCs$top
-colnames(samplePCs.out)[1] <- "#ID"
-write.table(samplePCs.out,paste(OUTDIR,"/sample_PCs.txt",sep=""),
-            col.names=T,row.names=F,sep="\t",quote=F)
-if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/sample_PCs.txt",sep=""),intern=F,wait=F)
-}
+  #Write out list of PCs per sample
+  samplePCs.out <- PCs$top
+  colnames(samplePCs.out)[1] <- "#ID"
+  write.table(samplePCs.out,paste(OUTDIR,"/sample_PCs.txt",sep=""),
+              col.names=T,row.names=F,sep="\t",quote=F)
+  if(gzip==T){
+    system(paste("gzip -f ",OUTDIR,"/sample_PCs.txt",sep=""),intern=F,wait=F)
+  }
 
-#Write out list of PC coordinates per cluster center
-clusterCenters.out <- data.frame("batch"=1:nrow(clust.PCs$cluster.centers),
-                                 clust.PCs$cluster.centers)
-colnames(clusterCenters.out)[1] <- "#batch"
-write.table(clusterCenters.out,
-            paste(OUTDIR,"/batch_center_coordinates.txt",sep=""),
-            col.names=T,row.names=F,sep="\t",quote=F)
-if(gzip==T){
-  system(paste("gzip -f ",OUTDIR,"/batch_center_coordinates.txt",sep=""),intern=F,wait=F)
+  #Write out list of PC coordinates per cluster center
+  clusterCenters.out <- data.frame("batch"=1:nrow(clust.PCs$cluster.centers),
+                                   clust.PCs$cluster.centers)
+  colnames(clusterCenters.out)[1] <- "#batch"
+  write.table(clusterCenters.out,
+              paste(OUTDIR,"/batch_center_coordinates.txt",sep=""),
+              col.names=T,row.names=F,sep="\t",quote=F)
+  if(gzip==T){
+    system(paste("gzip -f ",OUTDIR,"/batch_center_coordinates.txt",sep=""),intern=F,wait=F)
+  }
 }
 
 #####PART 3: SEX ASSIGNMENT#####
