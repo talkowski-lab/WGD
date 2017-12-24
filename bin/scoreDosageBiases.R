@@ -200,7 +200,7 @@ plotScores <- function(scores,label.outliers=T){
   axis(1,at=seq(-max.score,max.score,by=(2*max.score)/10),
        labels=round(seq(-max.score,max.score,by=(2*max.score)/10),digits=2),
        tick=F,line=-0.2,las=2,cex.axis=0.8)
-  mtext(1,line=2.5,text=expression(paste("Dosage Score (",delta,")",sep="")))
+  mtext(1,line=2.7,text=expression(paste("Dosage Score (",delta,")",sep="")))
   axis(2,at=seq(0,max(h$counts),by=ceiling(max(h$counts)/5)/5),
        labels=NA,tck=-0.01,col="gray50")
   axis(2,at=seq(0,max(h$counts),by=ceiling(max(h$counts)/5)),
@@ -208,13 +208,13 @@ plotScores <- function(scores,label.outliers=T){
   axis(2,at=seq(0,max(h$counts),by=ceiling(max(h$counts)/5)),
        labels=prettyNum(seq(0,max(h$counts),by=ceiling(max(h$counts)/5)),big.mark=","),
        tick=F,line=-0.2,las=2,cex.axis=0.8)
-  mtext(2,text="Samples",line=2.5)
+  mtext(2,text="Samples",line=2.7)
   mtext(3,font=2,line=0.5,text="Distribution of Dosage Scores")
 
   #Add legend
-  legend("topright",pch=19,col=c("blue","red"),
+  legend("topright",pch=21,pt.bg=c("blue","red"),
          legend=c("Pattern A Bias","Pattern B Bias"),
-         border=NA,bty="n",bg="white",cex=0.8,pt.cex=2)
+         border=NA,bty="n",bg="white",cex=0.8,pt.cex=1.7)
 
   ###Panel b: ordered dotplot with labeled outliers
   #Get point colors
@@ -243,7 +243,7 @@ plotScores <- function(scores,label.outliers=T){
   axis(1,at=seq(0,nrow(scores),by=nrow(scores)/5),
        tick=F,labels=paste(seq(0,100,20),"th",sep=""),
        line=-0.2,cex.axis=0.8,las=2)
-  mtext(1,line=2.5,text=expression(paste(delta," Percentile",sep="")))
+  mtext(1,line=2.7,text=expression(paste(delta," Percentile",sep="")))
   axis(2,at=seq(-max.score,max.score,by=(2*max.score)/50),
        labels=NA,tck=-0.01,col="gray50")
   axis(2,at=seq(-max.score,max.score,by=(2*max.score)/10),
@@ -251,7 +251,7 @@ plotScores <- function(scores,label.outliers=T){
   axis(2,at=seq(-max.score,max.score,by=(2*max.score)/10),
        labels=round(seq(-max.score,max.score,by=(2*max.score)/10),digits=2),
        tick=F,line=-0.2,las=2,cex.axis=0.8)
-  mtext(2,line=2.5,text=expression(paste("Dosage Score (",delta,")",sep="")))
+  mtext(2,line=2.7,text=expression(paste("Dosage Score (",delta,")",sep="")))
   mtext(3,font=2,line=0.5,text="Samples Ranked by Dosage Score")
 
   #Plot points
@@ -268,12 +268,12 @@ plotScores <- function(scores,label.outliers=T){
     #Determine labeling side & add line
     if(scores$score[i]>0){
       pos <- 2
-      segments(x0=i,x1=i-(0.02*nrow(scores)),
+      segments(x0=i-0.5,x1=i-(0.02*nrow(scores)),
                y0=scores$score[i],
                y1=scores$score[i])
     }else{
       pos <- 4
-      segments(x0=i,x1=i+(0.02*nrow(scores)),
+      segments(x0=i-0.5,x1=i+(0.02*nrow(scores)),
                y0=scores$score[i],
                y1=scores$score[i])
     }
