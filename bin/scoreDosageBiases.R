@@ -315,7 +315,7 @@ cov.file <- args$args[1]
 WGD.bins.file <- args$args[2]
 OUTDIR <- args$options$OUTDIR
 plot <- !(args$options$noplot)
-label.outliers <- args$options$outliers
+outliers <- args$options$outliers
 gzip <- args$options$gzip
 if(is.null(OUTDIR)){
   OUTDIR <- "./"
@@ -374,6 +374,6 @@ colnames(scores)[1] <- "ID"
 #Only run if optioned
 if(plot==T){
   pdf(paste(OUTDIR,"/WGD_score_distributions.pdf",sep=""),height=4,width=8)
-  plotScores(scores,label.outliers=label.outliers)
+  plotScores(scores,label.outliers=outliers)
   dev.off()
 }
