@@ -369,7 +369,7 @@ colnames(scores)[1] <- "ID"
 
 #####PART 3: PLOT SCORE DISTRIBUTIONS#####
 #Only run if optioned
-if(plot==F){
+if(plot==T){
   pdf(paste(OUTDIR,"/WGD_score_distributions.pdf",sep=""),height=4,width=8)
   plotScores(scores)
   dev.off()
