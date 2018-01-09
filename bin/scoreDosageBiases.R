@@ -256,7 +256,7 @@ plotScores <- function(scores,label.outliers=T){
 
   #Plot points
   points(c(1:nrow(scores))-0.5,y=scores$score,
-         pch=21,bg=cols,lwd=0.05,cex=0.7)
+         pch=21,bg=cols,cex=0.7)
 
   #Label outlier points
   MAD <- mad(scores$score)
@@ -294,6 +294,8 @@ option_list <- list(
               metavar="character"),
   make_option(c("--noplot"),action="store_true",default=FALSE,
               help="disable all visualization [default: %default]"),
+  make_option(c("--outliers"),action="store_true",default=FALSE,
+              help="label outliers on dosage score visualization [default: %default]"),
   make_option(c("-z", "--gzip"),action="store_true",default=FALSE,
               help="gzip output files [default: %default]")
 )
@@ -313,6 +315,7 @@ cov.file <- args$args[1]
 WGD.bins.file <- args$args[2]
 OUTDIR <- args$options$OUTDIR
 plot <- !(args$options$noplot)
+label.outliers <- args$options$outliers
 gzip <- args$options$gzip
 if(is.null(OUTDIR)){
   OUTDIR <- "./"
@@ -371,6 +374,6 @@ colnames(scores)[1] <- "ID"
 #Only run if optioned
 if(plot==T){
   pdf(paste(OUTDIR,"/WGD_score_distributions.pdf",sep=""),height=4,width=8)
-  plotScores(scores)
+  plotScores(scores,label.outliers=label.outliers)
   dev.off()
 }
