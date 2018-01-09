@@ -310,7 +310,7 @@ if(length(args$args) != 2){
 
 #Clean arguments & options
 cov.file <- args$args[1]
-WGD.bins <- args$args[2]
+WGD.bins.file <- args$args[2]
 OUTDIR <- args$options$OUTDIR
 plot <- !(args$options$noplot)
 gzip <- args$options$gzip
