@@ -256,31 +256,33 @@ plotScores <- function(scores,label.outliers=T){
 
   #Plot points
   points(c(1:nrow(scores))-0.5,y=scores$score,
-         pch=21,bg=cols,cex=0.7)
+         pch=21,bg=cols,lwd=0,cex=0.7)
 
   #Label outlier points
-  MAD <- mad(scores$score)
-  out.range <- c(summary(scores$score)[2]-1.5*MAD,
-                 summary(scores$score)[5]+1.5*MAD)
-  outliers <- which(scores$score < min(out.range) |
-                    scores$score > max(out.range))
-  sapply(outliers,function(i){
-    #Determine labeling side & add line
-    if(scores$score[i]>0){
-      pos <- 2
-      segments(x0=i-0.5,x1=i-(0.02*nrow(scores)),
-               y0=scores$score[i],
-               y1=scores$score[i])
-    }else{
-      pos <- 4
-      segments(x0=i-0.5,x1=i+(0.02*nrow(scores)),
-               y0=scores$score[i],
-               y1=scores$score[i])
-    }
-    #Add label
-    text(x=i-1,y=scores$score[i],pos=pos,
-         labels=scores$ID[i],cex=0.5,font=2)
-  })
+  if(label.outliers==T){
+    MAD <- mad(scores$score)
+    out.range <- c(summary(scores$score)[2]-1.5*MAD,
+                   summary(scores$score)[5]+1.5*MAD)
+    outliers <- which(scores$score < min(out.range) |
+                        scores$score > max(out.range))
+    sapply(outliers,function(i){
+      #Determine labeling side & add line
+      if(scores$score[i]>0){
+        pos <- 2
+        segments(x0=i-0.5,x1=i-(0.02*nrow(scores)),
+                 y0=scores$score[i],
+                 y1=scores$score[i])
+      }else{
+        pos <- 4
+        segments(x0=i-0.5,x1=i+(0.02*nrow(scores)),
+                 y0=scores$score[i],
+                 y1=scores$score[i])
+      }
+      #Add label
+      text(x=i-1,y=scores$score[i],pos=pos,
+           labels=scores$ID[i],cex=0.5,font=2)
+    })
+  }
 }
 
 ##########################
