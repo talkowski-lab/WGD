@@ -29,7 +29,7 @@ readBinCovList <- function(paths,labels=c(1:22,"X","Y"),
                            norm=F,exclude=c("X","Y")){
   #Iterate over paths and read/return all data frames
   dat <- lapply(paths,function(path){
-    dat <- as.data.frame(read.table(path,header=F,sep="\t"))
+    dat <- as.data.frame(read.table(path,header=F,sep="\t",fill=T))
     colnames(dat)[1:3] <- c("chr","start","end")
     return(dat)
   })
@@ -205,7 +205,7 @@ if(length(args$args) != 1){
 }
 
 #Read & process input list
-INFILE <- read.table(INFILE,header=F,sep="\t")
+INFILE <- read.table(INFILE,header=F,sep="\t",fill=T)
 if(ncol(INFILE)<4){
   stop("Input file must have four tab-delimited columns\n")
 }

@@ -256,7 +256,7 @@ plotScores <- function(scores,label.outliers=T){
 
   #Plot points
   points(c(1:nrow(scores))-0.5,y=scores$score,
-         pch=21,bg=cols,lwd=0,cex=0.7)
+         pch=21,bg=cols,lwd=0.05,cex=0.7)
 
   #Label outlier points
   if(label.outliers==T){
