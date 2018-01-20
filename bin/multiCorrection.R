@@ -12,9 +12,9 @@
 # 3: full path to desired output file for each contig
 # 4: full path to binCov-like matrix of feature ranks for each contig
 
-###DEV TEST:
-INFILE <- "~/scratch/multiCorrection_test/multiCorrect_test_input_shortened.txt"
-gzip <- T
+# ###DEV TEST:
+# INFILE <- "~/scratch/multiCorrection_test/multiCorrect_test_input_shortened.txt"
+# gzip <- T
 
 ####################################
 #####Set parameters & load libraries
@@ -26,7 +26,8 @@ options(scipen=1000,stringsAsFactors=F)
 ###############################################################################
 #Note: desiged to iterate over per-chromosome binCov files for a single sample
 readBinCovList <- function(paths,labels=c(1:22,"X","Y"),
-                           norm=F,exclude=c("X","Y")){
+                           norm=F,exclude=c("X","Y"),
+                           matchBed=NULL){
   #Iterate over paths and read/return all data frames
   dat <- lapply(paths,function(path){
     dat <- as.data.frame(read.table(path,header=F,sep="\t",fill=T))
@@ -35,6 +36,18 @@ readBinCovList <- function(paths,labels=c(1:22,"X","Y"),
   })
   names(dat) <- labels
 
+  #Match coordinates to matchBed, if optioned
+  if(!is.null(matchBed)){
+    if(length(matchBed) == length(dat)){
+      dat <- lapply(1:length(matchBed),function(i){
+        matchedDat <- merge(x=dat[[i]],
+                            y=matchBed[[i]],
+                            by=1:3,
+                            sort=F)
+        return(matchedDat)
+      })
+    }
+  }
 
   #Normalize each set of vals as median of all bins, if optioned
   if(norm==T){
@@ -221,7 +234,8 @@ out.paths <- gsub(".gz$","",out.paths,fixed=F,ignore.case=F)
 cov.all <- readBinCovList(cov.paths,norm=F,labels=contigs)
 cov.dat <- lapply(cov.all,function(df){return(as.vector(df[,4]))})
 cov.coords <- lapply(cov.all,function(df){return(as.vector(df[,1:3]))})
-feature.dat <- readBinCovList(feature.paths,labels=contigs,norm=F)
+feature.dat <- readBinCovList(feature.paths,labels=contigs,
+                              norm=F,matchBed=cov.coords)
 feature.dat <- lapply(feature.dat,function(df){return(df[,-c(1:3)])})
 
 #Calculate library-wide mean coverage for autosomes only
@@ -238,12 +252,14 @@ for(f in 1:ncol(feature.dat[[1]])){
       vals.residuals <- GCBinAdjustments(vals=cov.dat.adj[[i]],
                                          GC=feature.dat[[i]][,f],
                                          scalingMean=NULL,
-                                         scalingSD=NULL,do.scaleSD=T)
+                                         scalingSD=NULL,
+                                         do.scaleSD=T)
     }else{
       vals.residuals <- GCBinAdjustments(vals=cov.dat.adj[[i]],
                                          GC=feature.dat[[i]][,f],
                                          scalingMean=cov.mean,
-                                         scalingSD=NULL,do.scaleSD=T)
+                                         scalingSD=NULL,
+                                         do.scaleSD=T)
     }
     #Smooth coverage residuals
     vals.residuals.smoothed <- wrmean(vals.residuals,weights=c(0.1,0.2,1,0.2,0.1))
