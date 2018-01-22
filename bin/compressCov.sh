@@ -92,7 +92,7 @@ COLS=$( seq 4 $((${NSAMP}+3)) | paste -s -d, )
 
 #Calculate new bin size
 OBIN=$( fgrep -v "#" ${INPUT} | head -n2 | tail -n1 | awk '{ print $3-$2 }' )
-NBIN=$((${RATIO}*${OBIN}))
+NBIN=$(( ${RATIO}*${OBIN} ))
 
 #Print header from original file to OUTFILE
 if [ ${HEADER} -eq 1 ]; then
@@ -119,7 +119,7 @@ if [ ${GZ} == 1 ]; then
 fi
 
 #Clean up
-if [ GZI == 1 ]; then
-  rm -rf ${TMPI}
-  rm -rf ${INPUT}
-fi
+# if [ GZI == 1 ]; then
+#   rm -rf ${TMPI}
+#   rm -rf ${INPUT}
+# fi
