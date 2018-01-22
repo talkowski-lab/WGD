@@ -147,7 +147,7 @@ scoreSamples <- function(cov,bins){
     minus.scores <- abs(bins[minus,4])*(2-vals[minus])
 
     #Compute & return composite score
-    score <- sum(c(plus.scores,minus.scores))/length(vals)
+    score <- sum(c(plus.scores,minus.scores),na.rm=T)/length(vals)
     return(score)
   })
 
