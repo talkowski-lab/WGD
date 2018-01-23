@@ -980,10 +980,11 @@ if(is.null(OUTDIR)){
 }
 plot <- !(args$options$noplot)
 gzip <- args$options$gzip
+kmeans <- args$options$kmeans
 nPCs <- args$options$dimensions
+batch.ideal <- args$options$batchSize
 batch.min <- args$options$minBatch
 batch.max <- args$options$batchMax
-batch.ideal <- args$options$batchSize
 
 # ##DEV TEST RUN (on local machine)
 # INFILE <- "/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/WGD_batching_dev_data/WGD_batching_test.all_samples.1Mb_binCov.matrix.bed.gz"
