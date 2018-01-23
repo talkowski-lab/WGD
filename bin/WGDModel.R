@@ -924,7 +924,7 @@ boxplotsPerContig <- function(dat,exclude,genome.ploidy=2,contig.ploidy,
   }))))
   text(x=par("usr")[1],y=0.975*ymax,
        labels=paste("N=",prettyNum(nSamp,big.mark=",")," samples (",
-                    prettyNum(nSamp.hasNA,big.mark=",")," incomplete)",
+                    prettyNum(nSamp.hasNA-1,big.mark=",")," incomplete)",
                     sep=""),pos=4)
 
   #Add border cleanup
