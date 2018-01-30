@@ -183,10 +183,6 @@ def main():
     else:
         read_mode = 'rb'
 
-    #Debug norm_out
-    print(type(args.norm_out))
-    print(args.norm_out)
-
     #Read bamfile as pysam.AlignmentFile
     bamfile = pysam.AlignmentFile(filename, read_mode, index_filename=args.index_path)
 
@@ -199,23 +195,13 @@ def main():
          shell=True)
     #Gzip if optioned
     if args.gzip:
-        #Debug norm_out
-        print(type(args.norm_out))
-        print(args.norm_out)
         with open(args.cov_out, 'rb') as f_in, gzip.open(args.cov_out + '.gz', 
             'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
     os.remove(args.cov_out)
 
-    #Debug norm_out
-    print(type(args.norm_out))
-    print(args.norm_out)
-
     #Normalize coverage (if optioned) & write out
     if args.norm_out is not None:
-        #Debug norm_out
-        print(type(args.norm_out))
-        print(args.norm_out)
         ncoverage = coverage.to_dataframe(names = 'chr start end cov'.split())
         medcov = ncoverage.loc[ncoverage['cov'] > 0, 'cov'].median()
         ncoverage['cov'] = ncoverage['cov'] / medcov
