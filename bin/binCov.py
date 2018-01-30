@@ -183,6 +183,10 @@ def main():
     else:
         read_mode = 'rb'
 
+    #Debug norm_out
+    print(type(args.norm_out))
+    print(args.norm_out)
+
     #Read bamfile as pysam.AlignmentFile
     bamfile = pysam.AlignmentFile(filename, read_mode, index_filename=args.index_path)
 
@@ -199,6 +203,10 @@ def main():
             'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
     os.remove(args.cov_out)
+
+    #Debug norm_out
+    print(type(args.norm_out))
+    print(args.norm_out)
 
     #Normalize coverage (if optioned) & write out
     if args.norm_out is not None:
