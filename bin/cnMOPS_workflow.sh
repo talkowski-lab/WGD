@@ -9,7 +9,7 @@
 usage(){
 cat <<EOF
 
-usage: cnMOPS_workflow.sh [-h] [-r REBIN] [-o OUTDIR] [-c CLEANUP] BINCOVS
+usage: cnMOPS_workflow.sh [-h] [-r REBIN] [-o OUTDIR] [-c CLEANUP] [-x EXCLUDE] BINCOVS
 
 Wrapper script to run cn.MOPS workflow from a list of binCov input files
 
@@ -23,6 +23,9 @@ Optional arguments:
   -p  PREFIX    Name attached to all files (default: cnMOPS)
   -c  CLEANUP   Automatically delete all intermediate 
                   files (default: keep all intermediate files)
+  -x  BLACKLIST Intervals to be hard-filtered from binCov matrix
+  -S  SUBTRACT  Intervals to subtract from any overlapping calls 
+                  (e.g. N-masked reference gaps) 
 
 EOF
 }
@@ -32,7 +35,9 @@ REBIN=1
 OUTDIR=`pwd`
 PREFIX="cnMOPS"
 CLEANUP=0
-while getopts ":r:o:p:ch" opt; do
+BLACKLIST=0
+SUBTRACT=0
+while getopts ":r:o:p:cx:S:h" opt; do
   case "$opt" in
     h)
       usage
@@ -49,6 +54,12 @@ while getopts ":r:o:p:ch" opt; do
       ;;
     c)
       CLEANUP=1
+      ;;
+    x)
+      BLACKLIST=${OPTARG}
+      ;;
+    S)
+      SUBTRACT=${OPTARG}
       ;;
   esac
 done
@@ -89,6 +100,17 @@ else
   ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz
 fi
 
+#Blacklist binCov matrix (if optioned)
+if [ ${BLACKLIST} != "0" ]; then
+  bedtools intersect -v -wa \
+  -a ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz \
+  -b ${BLACKLIST} > \
+  ${OUTDIR}/${PREFIX}.compressed_matrix.bed2
+  mv ${OUTDIR}/${PREFIX}.compressed_matrix.bed2 \
+  ${OUTDIR}/${PREFIX}.compressed_matrix.bed
+  gzip -f ${OUTDIR}/${PREFIX}.compressed_matrix.bed
+fi
+
 #Run cn.MOPS
 echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | RUNNING cn.MOPS..."
 ${BIN}/runcnMOPS.R \
@@ -102,10 +124,18 @@ echo -e "${OUTDIR}/calls/${PREFIX}.cnMOPS.gff" > ${OUTDIR}/GFFs.list
 
 #Format cn.MOPS calls
 echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | FORMATTING cn.MOPS CALLS..."
-${BIN}/cleancnMOPS.sh -z \
--o ${OUTDIR}/calls/ \
-${OUTDIR}/samples.list \
-${OUTDIR}/GFFs.list
+if [ ${SUBTRACT} == "0" ]; then
+  ${BIN}/cleancnMOPS.sh -z \
+  -o ${OUTDIR}/calls/ \
+  ${OUTDIR}/samples.list \
+  ${OUTDIR}/GFFs.list
+else
+  ${BIN}/cleancnMOPS.sh -z \
+  -o ${OUTDIR}/calls/ \
+  -S ${SUBTRACT} \
+  ${OUTDIR}/samples.list \
+  ${OUTDIR}/GFFs.list
+fi  
 
 #Clean up (if optioned)
 if [ ${CLEANUP} -eq 1 ]; then
