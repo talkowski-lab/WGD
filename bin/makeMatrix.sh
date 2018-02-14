@@ -79,9 +79,8 @@ fi
 #Restrict OUTFILE to RESTRICT bins (if optioned)
 if [ ${RESTRICT} != "0" ]; then
   head -n1 ${OUTFILE} > ${OUTFILE}2
-  fgrep -v "#" ${RESTRICT} | awk '{ print $1"_"$2"_"$3 }' | fgrep -wf - \
-  <( paste <( sed '1d' ${OUTFILE} | awk '{ print $1"_"$2"_"$3 }' ) \
-           <( sed '1d' ${OUTFILE} ) ) | cut -f2- >> ${OUTFILE}2
+  sed '1d' ${OUTFILE} | \
+  bedtools intersect -v -wa -a - -b ${RESTRICT} >> ${OUTFILE}2
   mv ${OUTFILE}2 ${OUTFILE}
 fi
 
