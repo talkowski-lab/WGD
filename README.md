@@ -3,7 +3,7 @@
 
 **Contact:** Ryan Collins (rlcollins@g.harvard.edu)
 
-All code copyright (c) 2017 Ryan Collins and is distributed under terms of the MIT license.  
+All code copyright (c) 2018 Ryan Collins and is distributed under terms of the MIT license.  
 
 ---  
 ## Table of Contents  
@@ -29,9 +29,10 @@ The WGD pipeline requires the following:
 - Coordinate-sorted, indexed bams for all samples
 - List of contigs to evaluate
 - Bed-file of N-masked regions of the reference genome. These are available for most reference genome assemblies from [UCSC](http://genome.ucsc.edu/ "UCSC Genome Browser")  
+- 6F adjustment metadata matrices, which are available for human references hg19 or GRCh37 upon request. Matrices for other references are forthcoming.  
 
-#### Step 1: Generate normalized coverage per chromosome on all libraries  
-Normalized coverage is calculated by ```binCov.py``` on a per-chromosome basis. For whole-genome dosage bias analyses, nucleotide coverage at bin sizes of at least 10kb is recommended. Only primary autosomal contigs recommended; e.g. 1...22 for humans. Parallelization of this process is encouraged.  
+#### Step 1: Generate binned coverage per chromosome on all libraries  
+Binned coverage is calculated by ```binCov.py``` on a per-chromosome basis. For human whole-genome sequencing analyses, nucleotide coverage at bin sizes of 100bp is recommended. Only primary contigs recommended; e.g. 1...Y. Parallelization of this process is encouraged.  
 
 There are two approaches to parallelization, depending on your available computational resources. Examples are given below using LSF as a scheduler, but could be easily configured to your scheduler/environment.  
 
@@ -42,7 +43,7 @@ while read sample; do
   while read contig; do
     bsub "binCov.py ${sample}.bam ${contig} ${sample}.${contig}.rawCov.bed \
     -n ${sample}.${contig}.normCov.bed \
-    -b 10000 \
+    -b 100 \
     -m nucleotide \
     -x /path/to/Nmask.bed"
   done < list_of_contigs.txt
@@ -57,46 +58,104 @@ Alternatively, if available cores are limited or sample sizes are large, a wrapp
 while read sample; do
   bsub "WG_binCov.sh ${sample}.bam ${sample} `pwd` \
   -L list_of_contigs.txt \
-  -b 10000 \
+  -b 100 \
   -m nucleotide \
   -x /path/to/Nmask.bed"
 done < list_of_samples.txt
 ```
 
-#### Step 2: Create normalized dosage matrix for cohort  
-Once ```binCov.py``` has completed on all desired contigs for each sample, concatenate the normalized coverage beds per sample into a single bed file. Sorting or ordering of the concatenated bed file is not necessary.  
+#### Step 2: 6F coverage correction
+Once you have 100bp binCov files per chromosome computed for all samples, the next step is to apply 6F correction. This is accomplished with the script ```multiCorrection.R``` in ```WGD/bin/```.  
 
-Creating the coverage matrix can be done with ```bedtools unionbedg```, but for sake of convenience has been automated by ```makeMatrix.sh```, as follows:  
-```
-makeMatrix.sh input.txt > normCov.matrix.bed
-```  
+To run 6F correction, the ```multiCorrection.R``` script requires a tab-delimited input file with the following three columns for each chromosome:  
+1. full path to raw binCov file  
+2. desired full path to output corrected binCov file  
+3. full path to 6F metadata matrix for that chromosome  
 
-An example of the input file (```input.txt``` above):  
+The latter component, the 6F metadata matrix, is currently available upon request for hg19 and GRCh37. Additional references are forthcoming.  
+
+An example head & tail of the expected input file for `multiCorrection.R` should be:  
 ```
-sample1    /path/to/sample1.cov.bed
-sample2    /path/to/sample2.cov.bed
-sample3    /path/to/sample3.cov.bed
+/path/to/raw_binCov.chr1.bed.gz /path/to/output_corrected_binCov.chr1.bed.gz  /path/to/6F_correction_matrix.chr1.bed.gz
+/path/to/raw_binCov.chr2.bed.gz /path/to/output_corrected_binCov.chr2.bed.gz  /path/to/6F_correction_matrix.chr2.bed.gz
+/path/to/raw_binCov.chr3.bed.gz /path/to/output_corrected_binCov.chr3.bed.gz  /path/to/6F_correction_matrix.chr3.bed.gz
 ...
-sampleN    /path/to/sampleN.cov.bed
-```  
+/path/to/raw_binCov.chr22.bed.gz  /path/to/output_corrected_binCov.chr22.bed.gz /path/to/6F_correction_matrix.chr22.bed.gz
+/path/to/raw_binCov.chrX.bed.gz /path/to/output_corrected_binCov.chrX.bed.gz  /path/to/6F_correction_matrix.chrX.bed.gz
+/path/to/raw_binCov.chrY.bed.gz /path/to/output_corrected_binCov.chrY.bed.gz  /path/to/6F_correction_matrix.chrY.bed.gz
+```
 
-#### Step 3: Run WGD model  
-TBD  
+Once you've compiled this input file per sample, you can call the 6F correction script as follows:  
+```
+$ WGD/bin/multiCorrection.R -z /path/to/6F_correction_input_file.txt
+```
 
-#### Optional: Visualization of dosage biases  
-TBD  
+This job should require less than a couple hours to run on most standard machines.  
 
-#### Optional: Calcuating per-sample and binwise coverage distribution properties
-Median values can be evaluated with ```medianCoverage.R```. This tool operates in two modes (1) medians per bin across all samples, and (2) medians per sample across all bins. For each, median coverages are returned when considering all data and also when excluding bins (or samples) with zero coverage. See [documentation of medianCoverage.R](https://github.com/RCollins13/WGD#mediancoverager)  for details of this process.
 
---- 
+#### Step 3: Run WGD dosage scoring model  
+Once 6F correction is complete for all chromosomes per sample, you next need to run the WGD dosage bias scoring model. This has three intermediate steps, detailed below.  
 
-### Pipeline runtimes  
-**binCov.py**  
+**Step 2.1:** Generate a WGD scoring input file per sample. This is done by combining all 6F-adjusted binCov files across all chromosomes, then filtering them down to a specific set of bins we know to be informative for dosage bias scoring. This is accomplished with a four-liner, as follows:
+```
+zcat /path/to/output_corrected_binCov.chr*.bed.gz | \
+  bedtools intersect -f 1.0 -r -wa -a - \
+  -b WGD/refs/WGD_scoring_mask.6F_adjusted.100bp.h37.bed > \
+  /path/to/WGD_scoring_file_output.bed
+```
 
-The rate-limiting step of the pipeline is ```binCov.py```, which scales linearly with the number of reads per library. A successful run of all 22 human autosomes for a conventional 30X Illumina 2x100bp or 2x150bp WGS library usually takes approximately 3-6 hours (single-core CPU, 2GB RAM, 5GB swap, 1kb bins). This is the reason for maximizing parallelization where possible (see [earlier example](https://github.com/RCollins13/WGD#step-1-generate-normalized-coverage-per-chromosome-on-all-libraries)).  
+**Step 2.2:** Combine WGD scoring input files across all samples into a WGD scoring matrix. This is done the same way you would create any binCov matrix (e.g. before running cn.MOPS or RdTest), using the ```makeMatrix.sh``` script in ```WGD/bin/```. Example usage:
+```
+#First, generate makeMatrix input file
+while read ID; do
+  echo -e "${ID}\t/path/to/${ID}.6F_adjusted.WGD_scoring_bins.bed.gz"
+done < samples.list > \
+/path/to/WGD_scoring.makeMatrix_input.txt
 
-Physical coverage is marginally faster than nucleotide coverage. Bin sizes ≥100bp do not strongly influence runtime.  
+#Next, make the matrix
+/WGD/bin/makeMatrix.sh -z \
+    -o /path/to/output_WGD_scoring_masked.matrix.bed \
+    -r /WGD/refs/WGD_scoring_mask.6F_adjusted.100bp.h37.bed \
+    /path/to/WGD_scoring.makeMatrix_input.txt
+```
+
+**Step 2.3:** Run the WGD scoring model. Finally, you run the WGD scoring model on the matrix you created above with the following command:
+```
+/WGD/bin/scoreDosageBiases.R -z \
+  -O /path/to/WGD_model_output/ \
+  /path/to/output_WGD_scoring_masked.matrix.bed.gz \
+  /WGD/refs/WGD_scoring_mask.6F_adjusted.100bp.h37.bed
+```
+
+The output from the model will be a list of dosage scores, and a pdf of two plots visualizing the dosage score distributions for all samples.
+
+#### Step 4: Run ploidy estimation model
+Similar to the WGD scoring model above, the ploidy estimation model has four sequential steps, detailed below.  
+
+**Step 3.1:** Recompress binCov data per sample per chromosome to 1Mb bins. This is accomplished using the ```compressCov.sh``` script shipped with the WGD repo (under ```WGD/bin/```). Example usage below:  
+```
+#Do this per chromosome per sample
+/WGD/bin/compressCov.sh -N -z -s \
+    -o /path/to/6F_adjusted.1Mb_bins.binCov.bed.gz \
+    /path/to/6F_adjusted.100bp_bins.binCov.bed.gz \
+    10000
+```
+
+**Step 3.2:** Combine all recompressed binCov files into a single file per sample. This is done using the output from step 3.1, and can be accomplized using something simple like ```zcat``` or ```cat```.  
+
+**Step 3.3:** Create matrix of 1Mb recompressed binCov values across all samples. This is done using the output from step 3.2, and can be done using the same instructions as in step 2.2.  
+
+**Step 3.4:** Run the ploidy estimation model. This is performed on the 1Mb coverage matrix from step 3.3. with the ```estimatePloidy.R``` script. Example usage below:  
+```
+/WGD/bin/estimatePloidy.R -z \
+    -O /path/to/ploidy_estimate_output_directory/ \
+    /path/to/6F_adjusted.1Mb_bins.binCov_matrix.bed.gz
+```
+
+The output from this ploidy estimation script is a large number of files and plots, all of which summarize and/or visualize per-sample ploidy per chromosome.  
+
+#### Optional: Calcuating per-sample and binwise coverage distribution properties  
+Median values can be evaluated with ```medianCoverage.R```. This tool operates in two modes (1) medians per bin across all samples, and (2) medians per sample across all bins. For each, median coverages are returned when considering all data and also when excluding bins (or samples) with zero coverage. See [documentation of medianCoverage.R](https://github.com/RCollins13/WGD#mediancoverager)  for details of this process.  
 
 --- 
 
@@ -105,7 +164,7 @@ Physical coverage is marginally faster than nucleotide coverage. Bin sizes ≥10
 [CNView](https://github.com/RCollins13/CNView) is a companion tool for WGD that can visualize, score, and annotate CNVs directly from ___raw___ ```makeMatrix.sh``` output. More details on CNView can be found [here](http://biorxiv.org/content/early/2016/04/20/049536). If you use CNView, please cite [Collins et al., 2016](http://biorxiv.org/content/early/2016/04/20/049536).
 
 ---  
-## Script Documentation
+## Script Documentation (incomplete; work in progress)  
 ---  
 ### binCov.py
 Iterates through a single chromosome of a bam file and calculates either nucleotide or physical coverage in regularly segmented bins.
