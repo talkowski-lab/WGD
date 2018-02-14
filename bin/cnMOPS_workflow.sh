@@ -84,9 +84,16 @@ done
 
 #Creates binCov matrix
 echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | GENERATING COVERAGE MATRIX..."
-${BIN}/makeMatrix.sh -z \
--o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
-${BINCOVS}
+if [ ${BLACKLIST} != "0" ]; then
+  ${BIN}/makeMatrix.sh -z \
+  -r ${BLACKLIST} \
+  -o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
+  ${BINCOVS}
+else
+  ${BIN}/makeMatrix.sh -z \
+  -o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
+  ${BINCOVS}
+fi
 
 #Recompresses binCov matrix (if optioned)
 if [ ${REBIN} -gt 1 ]; then
