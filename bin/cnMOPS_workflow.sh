@@ -109,7 +109,7 @@ fi
 
 #Blacklist binCov matrix (if optioned)
 if [ ${BLACKLIST} != "0" ]; then
-  bedtools intersect -v -wa \
+  bedtools intersect -header -v -wa \
   -a ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz \
   -b ${BLACKLIST} > \
   ${OUTDIR}/${PREFIX}.compressed_matrix.bed2
