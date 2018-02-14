@@ -9,7 +9,7 @@
 usage(){
 cat <<EOF
 
-usage: cnMOPS_workflow.sh [-h] [-r REBIN] [-o OUTDIR] [-c CLEANUP] [-x EXCLUDE] BINCOVS
+usage: cnMOPS_workflow.sh [-h] [-r REBIN] [-o OUTDIR] [-c CLEANUP] [-x EXCLUDE] [-S SUBTRACT] BINCOVS
 
 Wrapper script to run cn.MOPS workflow from a list of binCov input files
 
