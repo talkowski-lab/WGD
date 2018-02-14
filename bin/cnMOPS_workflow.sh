@@ -115,7 +115,8 @@ if [ ${BLACKLIST} != "0" ]; then
   ${OUTDIR}/${PREFIX}.compressed_matrix.bed2
   mv ${OUTDIR}/${PREFIX}.compressed_matrix.bed2 \
   ${OUTDIR}/${PREFIX}.compressed_matrix.bed
-  gzip -f ${OUTDIR}/${PREFIX}.compressed_matrix.bed
+  bgzip -f ${OUTDIR}/${PREFIX}.compressed_matrix.bed
+  tabix -f ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz
 fi
 
 #Run cn.MOPS
