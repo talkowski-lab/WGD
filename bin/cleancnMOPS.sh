@@ -54,6 +54,13 @@ shift $(( ${OPTIND} - 1))
 SAMPLES=$1
 GFFS=$2
 
+#Debug
+echo ${OUTDIR}
+echo ${GZ}
+echo ${SUBTRACT}
+echo ${SAMPLES}
+echo ${GFFS}
+
 #Check for required input
 if [ -z ${SAMPLES} ] || [ -z ${GFFS} ]; then
   usage
