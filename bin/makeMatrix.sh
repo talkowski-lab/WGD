@@ -10,7 +10,7 @@
 usage(){
 cat <<EOF
 
-usage: makeMatrix.sh [-h] [-z] [-r RESTRICT] [-o OUTFILE] SAMPLES
+usage: makeMatrix.sh [-h] [-z] [-N] [-r RESTRICT] [-o OUTFILE] SAMPLES
 
 Helper tool to automate creation of sorted coverage matrices from
 binCov.py output bed files
@@ -21,6 +21,7 @@ Positional arguments:
 Optional arguments:
   -h  HELP        Show this help message and exit
   -z  BGZIP       Bgzip and tabix output file
+  -N  NOSORT      Skip final matrix sort step
   -r  RESTRICT    Restrict output to all bins in RESTRICT file
   -o  OUTFILE     Output file (default: stdout)
 
@@ -29,9 +30,10 @@ EOF
 
 #Parse arguments
 OUTFILE=/dev/stdout
-RESTRICT=0
 GZ=0
-while getopts ":o:r:zh" opt; do
+NOSORT=0
+RESTRICT=0
+while getopts ":o:zNr:h" opt; do
 	case "$opt" in
 		h)
 			usage
@@ -39,6 +41,9 @@ while getopts ":o:r:zh" opt; do
 			;;
     z)
       GZ=1
+      ;;
+    N)
+      NOSORT=1
       ;;
     r)
       RESTRICT=${OPTARG}
@@ -84,9 +89,14 @@ if [ ${RESTRICT} != "0" ]; then
   mv ${OUTFILE}2 ${OUTFILE}
 fi
 
-#Add hash to header line of OUTFILE & sort
-cat <( head -n1 ${OUTFILE} | awk '{ print "#"$0 }' ) \
+#Add hash to header line of OUTFILE & sort (if optioned)
+if [ ${NOSORT} -eq 1 ]; then
+  cat <( head -n1 ${OUTFILE} | awk '{ print "#"$0 }' ) \
+    <( sed '1d' ${OUTFILE} ) > ${OUTFILE}2
+else
+  cat <( head -n1 ${OUTFILE} | awk '{ print "#"$0 }' ) \
     <( sed '1d' ${OUTFILE} | sort -Vk1,1 -k2,2n -k3,3n | uniq ) > ${OUTFILE}2
+fi
 mv ${OUTFILE}2 ${OUTFILE}
 
 #Bgzip & tabix OUTFILE, if optioned

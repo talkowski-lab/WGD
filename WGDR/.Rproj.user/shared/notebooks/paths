@@ -12,6 +12,7 @@
 /Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/plot/plot_cnMOPS_test_distros.R="BAC67B6E"
 /Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/plot/plot_gnomAD_v2_cnMOPS_QC.R="729A7B2"
 /Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/plot/plot_gnomAD_v2_coverageCutoffs.rough_draft.R="A9C8F136"
+/Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/plot/plot_gnomAD_v2_picard_QC.R="8ECB5301"
 /Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/plot/plot_minimal_metadata.R="4A30D4F3"
 /Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/working_code/WGD_scoring/WGD_outliers_dev.R="3F097A94"
 /Users/rlc/Desktop/Collins/Talkowski/NGS/SV_Projects/gnomAD/gnomad_sv/working_code/WGD_scoring/WGD_scoring_dev.R="570798BB"
@@ -20,4 +21,5 @@
 /Users/rlc/Desktop/Collins/Talkowski/code/WGD/bin/medianCoverage.R="EF0778C0"
 /Users/rlc/Desktop/Collins/Talkowski/code/WGD/bin/multiCorrection.R="8AB3FAC6"
 /Users/rlc/Desktop/Collins/Talkowski/code/WGD/bin/scoreDosageBiases.R="3E7CFB14"
+/Users/rlc/Desktop/Collins/Talkowski/misc/Grants/gnomAD_SV_R01_resubmission_Feb2018/gnomAD_R01_resubmission_figures/gnomAD_batching_figure/gnomAD_v2.plot_master_batch_QC_forR01.R="590426C3"
 /Users/rlc/Desktop/Collins/Talkowski/misc/Illumina_WGS_SV_Comparisons/plot_SVcomp_Bars.R="48E802F2"
