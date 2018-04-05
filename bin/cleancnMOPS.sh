@@ -89,10 +89,10 @@ while read ID; do
   fi
   #Merge deletions
   awk -v ID="${ID}" -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DEL_MASTER} | \
-  bedtools merge -i - > ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
+  bedtools merge -i - |awk -v OFS="\t" -v ID=${ID} '{ print $0,"temp",ID,"DEL" }'> ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
   #Merge duplications
   awk -v ID="${ID}" -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DUP_MASTER} | \
-  bedtools merge -i - > ${OUTDIR}/${ID}/${ID}.cnMOPS.DUP.bed
+  bedtools merge -i - |awk -v OFS="\t" -v ID=${ID} '{ print $0,"temp",ID,"DUP" }' > ${OUTDIR}/${ID}/${ID}.cnMOPS.DUP.bed
   #Subtracts intervals (if optioned)
   if [ ${SUBTRACT} != "0" ]; then
     for CNV in DEL DUP; do
