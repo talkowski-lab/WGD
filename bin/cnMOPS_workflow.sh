@@ -4,12 +4,12 @@
 # Distributed under terms of the MIT license.
 
 # Wrapper script to run cn.MOPS workflow from a list of binCov input files
-
+set -e
 #Usage statement
 usage(){
 cat <<EOF
 
-usage: cnMOPS_workflow.sh [-h] [-r REBIN] [-o OUTDIR] [-c CLEANUP] [-x EXCLUDE] [-S SUBTRACT] BINCOVS
+usage: cnMOPS_workflow.sh [-h] [-r REBIN] [-o OUTDIR] [-c CLEANUP] BINCOVS
 
 Wrapper script to run cn.MOPS workflow from a list of binCov input files
 
@@ -23,9 +23,6 @@ Optional arguments:
   -p  PREFIX    Name attached to all files (default: cnMOPS)
   -c  CLEANUP   Automatically delete all intermediate 
                   files (default: keep all intermediate files)
-  -x  BLACKLIST Intervals to be hard-filtered from binCov matrix
-  -S  SUBTRACT  Intervals to subtract from any overlapping calls 
-                  (e.g. N-masked reference gaps) 
 
 EOF
 }
@@ -35,9 +32,7 @@ REBIN=1
 OUTDIR=`pwd`
 PREFIX="cnMOPS"
 CLEANUP=0
-BLACKLIST=0
-SUBTRACT=0
-while getopts ":r:o:p:cx:S:h" opt; do
+while getopts ":r:o:p:ch" opt; do
   case "$opt" in
     h)
       usage
@@ -53,13 +48,7 @@ while getopts ":r:o:p:cx:S:h" opt; do
       PREFIX=${OPTARG}
       ;;
     c)
-      CLEANUP=1
-      ;;
-    x)
-      BLACKLIST=${OPTARG}
-      ;;
-    S)
-      SUBTRACT=${OPTARG}
+      CLEANUP=0
       ;;
   esac
 done
@@ -84,16 +73,9 @@ done
 
 #Creates binCov matrix
 echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | GENERATING COVERAGE MATRIX..."
-if [ ${BLACKLIST} != "0" ]; then
-  ${BIN}/makeMatrix.sh -z \
-  -r ${BLACKLIST} \
-  -o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
-  ${BINCOVS}
-else
-  ${BIN}/makeMatrix.sh -z \
-  -o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
-  ${BINCOVS}
-fi
+${BIN}/makeMatrix.sh -z \
+-o ${OUTDIR}/${PREFIX}.raw_matrix.bed \
+${BINCOVS}
 
 #Recompresses binCov matrix (if optioned)
 if [ ${REBIN} -gt 1 ]; then
@@ -105,18 +87,6 @@ if [ ${REBIN} -gt 1 ]; then
 else
   mv ${OUTDIR}/${PREFIX}.raw_matrix.bed.gz \
   ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz
-fi
-
-#Blacklist binCov matrix (if optioned)
-if [ ${BLACKLIST} != "0" ]; then
-  bedtools intersect -header -v -wa \
-  -a ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz \
-  -b ${BLACKLIST} > \
-  ${OUTDIR}/${PREFIX}.compressed_matrix.bed2
-  mv ${OUTDIR}/${PREFIX}.compressed_matrix.bed2 \
-  ${OUTDIR}/${PREFIX}.compressed_matrix.bed
-  bgzip -f ${OUTDIR}/${PREFIX}.compressed_matrix.bed
-  tabix -f ${OUTDIR}/${PREFIX}.compressed_matrix.bed.gz
 fi
 
 #Run cn.MOPS
@@ -131,19 +101,11 @@ cut -f1 ${BINCOVS} > ${OUTDIR}/samples.list
 echo -e "${OUTDIR}/calls/${PREFIX}.cnMOPS.gff" > ${OUTDIR}/GFFs.list
 
 #Format cn.MOPS calls
-echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | FORMATTING cn.MOPS CALLS..."
-if [ ${SUBTRACT} != "0" ]; then
-  ${BIN}/cleancnMOPS.sh -z \
-  -o ${OUTDIR}/calls/ \
-  -S ${SUBTRACT} \
-  ${OUTDIR}/samples.list \
-  ${OUTDIR}/GFFs.list
-else
-  ${BIN}/cleancnMOPS.sh -z \
-  -o ${OUTDIR}/calls/ \
-  ${OUTDIR}/samples.list \
-  ${OUTDIR}/GFFs.list
-fi  
+# echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | FORMATTING cn.MOPS CALLS..."
+# ${BIN}/cleancnMOPS.sh -z \
+# -o ${OUTDIR}/calls/ \
+# ${OUTDIR}/samples.list \
+# ${OUTDIR}/GFFs.list
 
 #Clean up (if optioned)
 if [ ${CLEANUP} -eq 1 ]; then
