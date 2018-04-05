@@ -131,19 +131,19 @@ cut -f1 ${BINCOVS} > ${OUTDIR}/samples.list
 echo -e "${OUTDIR}/calls/${PREFIX}.cnMOPS.gff" > ${OUTDIR}/GFFs.list
 
 #Format cn.MOPS calls
-echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | FORMATTING cn.MOPS CALLS..."
-if [ ${SUBTRACT} != "0" ]; then
-  ${BIN}/cleancnMOPS.sh -z \
-  -o ${OUTDIR}/calls/ \
-  -S ${SUBTRACT} \
-  ${OUTDIR}/samples.list \
-  ${OUTDIR}/GFFs.list
-else
-  ${BIN}/cleancnMOPS.sh -z \
-  -o ${OUTDIR}/calls/ \
-  ${OUTDIR}/samples.list \
-  ${OUTDIR}/GFFs.list
-fi  
+# echo -e "STATUS | $( date +"%T (%m-%d-%y)" ) | FORMATTING cn.MOPS CALLS..."
+# if [ ${SUBTRACT} != "0" ]; then
+  # ${BIN}/cleancnMOPS.sh -z \
+  # -o ${OUTDIR}/calls/ \
+  # -S ${SUBTRACT} \
+  # ${OUTDIR}/samples.list \
+  # ${OUTDIR}/GFFs.list
+# else
+  # ${BIN}/cleancnMOPS.sh -z \
+  # -o ${OUTDIR}/calls/ \
+  # ${OUTDIR}/samples.list \
+  # ${OUTDIR}/GFFs.list
+# fi  
 
 #Clean up (if optioned)
 if [ ${CLEANUP} -eq 1 ]; then
