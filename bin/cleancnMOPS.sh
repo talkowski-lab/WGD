@@ -10,7 +10,7 @@
 usage(){
 cat <<EOF
 
-usage: cleancnMOPS.sh [-h] [-z] [-o OUTDIR] SAMPLES GFFS
+usage: cleancnMOPS.sh [-h] [-z] [-o OUTDIR] [-S SUBTRACT] SAMPLES GFFS
 
 Helper tool to split cn.MOPS calls by sample and copy state and merge
 across multiple runs (e.g. at different resolutions)
@@ -23,6 +23,8 @@ Optional arguments:
   -h  HELP        Show this help message and exit
   -z  GZIP        Gzip output file
   -o  OUTDIR      Output directory
+  -S  SUBTRACT    Intervals to subtract from any overlapping calls 
+                  (e.g. N-masked reference gaps) 
 
 EOF
 }
@@ -30,7 +32,8 @@ EOF
 #Parse arguments
 OUTDIR=`pwd`
 GZ=0
-while getopts ":o:zh" opt; do
+SUBTRACT=0
+while getopts ":o:zS:h" opt; do
   case "$opt" in
     h)
       usage
@@ -41,6 +44,9 @@ while getopts ":o:zh" opt; do
       ;;
     z)
       GZ=1
+      ;;
+    S)
+      SUBTRACT=${OPTARG}
       ;;
   esac
 done
@@ -82,11 +88,22 @@ while read ID; do
     mkdir ${OUTDIR}/${ID}
   fi
   #Merge deletions
-  awk -v ID=${ID} -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DEL_MASTER} | \
-  bedtools merge -i - |awk -v OFS="\t" -v ID=${ID} '{ print $0,"temp",ID,"DEL" }'> ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
+  awk -v ID="${ID}" -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DEL_MASTER} | \
+  bedtools merge -i - > ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
   #Merge duplications
-  awk -v ID=${ID} -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DUP_MASTER} | \
-  bedtools merge -i - |awk -v OFS="\t" -v ID=${ID} '{ print $0,"temp",ID,"DUP" }' > ${OUTDIR}/${ID}/${ID}.cnMOPS.DUP.bed
+  awk -v ID="${ID}" -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DUP_MASTER} | \
+  bedtools merge -i - > ${OUTDIR}/${ID}/${ID}.cnMOPS.DUP.bed
+  #Subtracts intervals (if optioned)
+  if [ ${SUBTRACT} != "0" ]; then
+    for CNV in DEL DUP; do
+      bedtools subtract \
+      -a ${OUTDIR}/${ID}/${ID}.cnMOPS.${CNV}.bed \
+      -b ${SUBTRACT} | sort -Vk1,1 -k2,2n -k3,3n > \
+      ${OUTDIR}/${ID}/${ID}.cnMOPS.${CNV}.bed2 
+      mv ${OUTDIR}/${ID}/${ID}.cnMOPS.${CNV}.bed2 \
+      ${OUTDIR}/${ID}/${ID}.cnMOPS.${CNV}.bed
+    done
+  fi
   #Gzip (if optioned)
   if [ ${GZ} -eq 1 ]; then
     gzip -f ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
