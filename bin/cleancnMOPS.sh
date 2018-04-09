@@ -84,30 +84,30 @@ done < ${GFFS} | sort -Vk1,1 -k2,2n -k3,3n -k4,4 > ${DUP_MASTER}
 #Iterates over samples & merges across GFFs
 while read ID; do
   #Make output directory per sample
-  if ! [ -e ${OUTDIR}/${ID} ]; then
-    mkdir ${OUTDIR}/${ID}
-  fi
+  # if ! [ -e ${OUTDIR}/${ID} ]; then
+    # mkdir ${OUTDIR}/${ID}
+  # fi
   #Merge deletions
   awk -v ID="${ID}" -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DEL_MASTER} | \
-  bedtools merge -i - |awk -v OFS="\t" -v ID=${ID} '{ print $0,"temp",ID,"DEL" }'> ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
+  bedtools merge -i - |awk -v OFS="\t" -v ID=${ID} '{ print $0,"temp",ID,"DEL" }'> ${OUTDIR}/${ID}.cnMOPS.DEL.bed
   #Merge duplications
   awk -v ID="${ID}" -v OFS="\t" '{ if ($4==ID) print $1, $2, $3 }' ${DUP_MASTER} | \
-  bedtools merge -i - |awk -v OFS="\t" -v ID=${ID} '{ print $0,"temp",ID,"DUP" }' > ${OUTDIR}/${ID}/${ID}.cnMOPS.DUP.bed
+  bedtools merge -i - |awk -v OFS="\t" -v ID=${ID} '{ print $0,"temp",ID,"DUP" }' > ${OUTDIR}/${ID}.cnMOPS.DUP.bed
   #Subtracts intervals (if optioned)
   if [ ${SUBTRACT} != "0" ]; then
     for CNV in DEL DUP; do
       bedtools subtract \
-      -a ${OUTDIR}/${ID}/${ID}.cnMOPS.${CNV}.bed \
+      -a ${OUTDIR}/${ID}.cnMOPS.${CNV}.bed \
       -b ${SUBTRACT} | sort -Vk1,1 -k2,2n -k3,3n > \
-      ${OUTDIR}/${ID}/${ID}.cnMOPS.${CNV}.bed2 
-      mv ${OUTDIR}/${ID}/${ID}.cnMOPS.${CNV}.bed2 \
-      ${OUTDIR}/${ID}/${ID}.cnMOPS.${CNV}.bed
+      ${OUTDIR}/${ID}.cnMOPS.${CNV}.bed2 
+      mv ${OUTDIR}/${ID}.cnMOPS.${CNV}.bed2 \
+      ${OUTDIR}/${ID}.cnMOPS.${CNV}.bed
     done
   fi
   #Gzip (if optioned)
   if [ ${GZ} -eq 1 ]; then
-    gzip -f ${OUTDIR}/${ID}/${ID}.cnMOPS.DEL.bed
-    gzip -f ${OUTDIR}/${ID}/${ID}.cnMOPS.DUP.bed
+    gzip -f ${OUTDIR}/${ID}.cnMOPS.DEL.bed
+    gzip -f ${OUTDIR}/${ID}.cnMOPS.DUP.bed
   fi
 done < ${SAMPLES}
 
