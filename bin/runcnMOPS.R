@@ -78,7 +78,7 @@ cov[is.na(cov)] <- 0
 median.per.sample <- apply(cov[,-c(1:3)],2,median,na.rm=T)
 if(any(median.per.sample==0)){
   samples.to.exclude <- which(median.per.sample==0)
-  if(length(samples.to.excude)>0){
+  if(length(samples.to.exclude)>0){
     samples.to.exclude <- samples.to.exclude+3
     cat(paste("\nEXCLUDING SAMPLES DUE TO NO COVERAGE:\n",
               paste(colnames(cov)[samples.to.exclude],collapse="\n"),sep=""))
